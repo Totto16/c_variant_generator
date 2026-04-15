@@ -1,5 +1,5 @@
 import path from "node:path"
-import { addGenerateMacros, assert, writeFileAndDirs } from "../utils.js"
+import { addGenerateMacros, assert, writeFileAndDirs } from "./utils.js"
 import { CaseName, getBrand, isSimpleTaggedType, type CEnumType, type CppFeatures, type ID, type StructOrder, type TaggedMember, type TaggedName, type TaggedType, type TaggedTypeSimple, type TaggedTypeStruct, type TaggedUnion, type TaggedUnionEnum } from "./base.js"
 import { getGlobalTaggedUnions } from "./data.js"
 

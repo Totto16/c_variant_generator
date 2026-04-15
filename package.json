@@ -1,6 +1,6 @@
 {
-	"name": "tools_helper",
-	"version": "0.0.1",
+	"name": "c_variant_generator",
+	"version": "1.1.4",
 	"description": "",
 	"main": "build/index.js",
 	"scripts": {

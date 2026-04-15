@@ -1,5 +1,5 @@
 import type { Expect, Equal } from "type-testing"
-import { arrayIsEq, assert, isUTF8String } from "../utils.js"
+import { arrayIsEq, assert, isUTF8String } from "./utils.js"
 
 
 function isUpperCase(str: string): boolean {

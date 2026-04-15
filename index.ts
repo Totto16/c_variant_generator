@@ -1,7 +1,9 @@
-import { subcommandGenerator, subcommandWsTests } from "./src/subcommands.js"
 import { fsAsyncExists, getThisPackageFile } from "./src/utils.js";
+import path from "node:path"
+import { outputVariantJsonSchema } from "./src/data.js"
+import { generateVariantCodeC } from "./src/variants.js";
 
-import path from 'node:path';
+
 
 async function isCallingThisScript(value: string): Promise<boolean> {
 
@@ -24,14 +26,19 @@ async function isCallingThisScript(value: string): Promise<boolean> {
 }
 
 
-type SubCommand = "ws_tests" | "generator"
+interface GenerateOptions {
+    output: string,
+    input: string
+}
+
 
 async function main(): Promise<void> {
 
-    let subcommand: SubCommand | null = null
-    const args: string[] = []
+    const options: Partial<GenerateOptions> = {}
 
-    for (const value of process.argv) {
+    for (let i = 0; i < process.argv.length; ++i) {
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        const value = process.argv[i]!
 
         if (value.endsWith('deno') || value.endsWith('node') || value.endsWith('bun')) {
             continue
@@ -49,43 +56,60 @@ async function main(): Promise<void> {
             continue
         }
 
+        if (value == '--variant-json-schema') {
+            outputVariantJsonSchema()
+            return;
+        }
 
-        if (subcommand === null) {
-            switch (value) {
-                case "ws_tests": {
-                    subcommand = "ws_tests"
-                    break;
-                }
-                case "generator": {
-                    subcommand = "generator"
-                    break;
-                }
-                default: {
-                    throw new Error(`Invalid subcommand: ${value}`)
-                }
+
+        if (value == '-o' || value == '--output') {
+            if (i + 1 >= process.argv.length) {
+                throw new Error(
+                    `Expected another argument for the output argument`
+                )
             }
 
-        } else {
-            args.push(value)
+
+            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+            const output = path.resolve(process.argv[i + 1]!)
+
+            options.output = output
+            ++i
+            continue
         }
+
+        if (value == '-i' || value == '--input') {
+            if (i + 1 >= process.argv.length) {
+                throw new Error(
+                    `Expected another argument for the input argument`
+                )
+            }
+
+
+            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+            const input = path.resolve(process.argv[i + 1]!)
+
+            options.input = input
+            ++i
+            continue
+        }
+
+
+        throw new Error(`Unrecognized argument: ${value}`)
+
 
     }
 
-    switch (subcommand) {
-        case "generator": {
-            await subcommandGenerator(args);
-            return;
-        }
-        case "ws_tests": {
-            await subcommandWsTests(args);
-            return;
-        }
-        default: {
-            throw new Error(
-                `No subcommand specified: ${subcommand as unknown as string}`
-            )
-        }
+    if (!options.output) {
+        throw new Error(`No output given`)
     }
+
+    if (!options.input) {
+        throw new Error(`No input given`)
+    }
+
+    await generateVariantCodeC(options.output, options.input)
+
 
 }
 

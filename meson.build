@@ -1,3 +1,19 @@
+project(
+    'c_variant_generator',
+    'c',
+    license: 'MIT',
+    meson_version: '>=1.10.0',
+    default_options: {
+        'buildtype': 'release',
+        'optimization': '3',
+        'warning_level': '3',
+        'werror': 'true',
+        'b_ndebug': 'if-release',
+    },
+    version: '1.1.4',
+)
+
+
 pnpm = find_program(
     'pnpm',
     required: true,
@@ -209,88 +225,6 @@ genrated_variants_generated_tgt = custom_target(
 )
 
 
-generated_variants_dep = declare_dependency(
-    version: meson.project_version(),
-    sources: genrated_variants_generated_tgt,
-)
 
 
-generated_hpack_huffman_c_tgt = custom_target(
-    'generated_hpack_huffman.c',
-    command: [
-        node_like_runtime,
-        '@CURRENT_SOURCE_DIR@',
-        'generator',
-        '--type',
-        'c_hpack_huffman',
-        '-o',
-        '@OUTPUT0@',
-    ],
-    output: ['generated_hpack_huffman.h', 'generated_hpack_huffman.c'],
-    build_subdir: 'generated' / 'c' / 'hpack' / 'huffman',
-    depend_files: helper_script_depend_files,
-    depends: helper_script_depends,
-)
-
-generated_hpack_huffman_dep = declare_dependency(
-    dependencies: generated_variants_dep,
-    version: meson.project_version(),
-    sources: generated_hpack_huffman_c_tgt,
-)
-
-generated_hpack_c_tgt = custom_target(
-    'generated_hpack.h',
-    command: [
-        node_like_runtime,
-        '@CURRENT_SOURCE_DIR@',
-        'generator',
-        '--type',
-        'c_header_table',
-        '-o',
-        '@OUTPUT0@',
-    ],
-    output: ['generated_hpack.h', 'generated_hpack.c'],
-    build_subdir: 'generated' / 'c' / 'hpack' / 'normal',
-    depend_files: helper_script_depend_files,
-    depends: helper_script_depends,
-)
-
-generated_hpack_dep = declare_dependency(
-    dependencies: generated_variants_dep,
-    version: meson.project_version(),
-    sources: generated_hpack_c_tgt,
-)
-
-generated_hpack_tests_cpp_tgt = custom_target(
-    'generated_hpack_tests.hpp',
-    command: [
-        node_like_runtime,
-        '@CURRENT_SOURCE_DIR@',
-        'generator',
-        '--type',
-        'cpp_tests',
-        '-o',
-        '@OUTPUT0@',
-    ],
-    output: ['generated_hpack_tests.hpp', 'generated_hpack_tests.cpp', 'generated_hpack_tests.c'],
-    build_subdir: 'generated' / 'cpp' / 'tests',
-    depend_files: helper_script_depend_files,
-    depends: helper_script_depends,
-)
-generated_hpack_tests_cpp_dep = declare_dependency(
-    dependencies: generated_hpack_huffman_dep,
-    version: meson.project_version(),
-    sources: generated_hpack_tests_cpp_tgt,
-)
-
-generated_hpack_tests_cpp_generated_headers = generated_hpack_tests_cpp_tgt[0]
-
-
-generated_sources = alias_target(
-    'generated_sources',
-    generated_hpack_huffman_c_tgt,
-    generated_hpack_c_tgt,
-    generated_hpack_tests_cpp_tgt,
-    all_variants_generated_tgt,
-    json_variants_generated_tgt,
-)
+meson.override_find_program('c_variant_generator')
