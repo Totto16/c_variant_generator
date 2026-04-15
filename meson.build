@@ -28,7 +28,7 @@ c_variant_generator_script_depend_files = files(
 
 c_variant_generator_script_depends = []
 
-meson_wrapper_sh = find_program(meson.current_source_dir() / 'meson_wrapper.sh')
+meson_wrapper_sh = find_program(meson.current_source_dir() / 'meson_helper' / 'meson_wrapper.sh')
 
 install_dependencies = custom_target(
     'install dependencies (c_variant_generator script)',
@@ -131,26 +131,23 @@ else
     error('No JS runtime to generate sources')
 endif
 
-generate_program_sh = find_program(meson.current_source_dir() / 'generate_program.sh')
+c_variant_generator_exe_cfg_data = {
+    'node': node_like_runtime.full_path(),
+    'dir': meson.current_source_dir(),
+}
 
-c_variant_generator_file = custom_target(
-    command: [
-        generate_program_sh,
-        node_like_runtime,
-        '@CURRENT_SOURCE_DIR@',
-        '@OUTPUT@',
-    ],
-    output: ['c_variant_generator_wrapper.sh'],
-    depend_files: c_variant_generator_script_depend_files,
-    depends: c_variant_generator_script_depends,
+c_variant_generator_exe_cfg = configure_file(
+    input: files('meson_helper' / 'config.h.in'),
+    configuration: c_variant_generator_exe_cfg_data,
+    output: 'config.h',
 )
 
-c_variant_generator_file_path = c_variant_generator_file.full_path()
+c_variant_generator_exe = executable(
+    'c_variant_generator_exe',
+    files('meson_helper' / 'generate_wrapper.c'),
+    c_variant_generator_exe_cfg,
+    c_variant_generator_script_depends,
 
-fs = import('fs')
+)
 
-fs.(c_variant_generator_file_path)
-
-c_variant_generator_prog = find_program(c_variant_generator_file_path)
-
-meson.override_find_program('c_variant_generator', c_variant_generator_prog)
+meson.override_find_program('c_variant_generator', c_variant_generator_exe)
