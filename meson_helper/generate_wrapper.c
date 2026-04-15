@@ -15,7 +15,12 @@ int main(const int argc, char *const *const argv) {
     return 1;
   }
 
-  char **const array = malloc(sizeof(char *) * (argc + 3));
+  if (argc < 1) {
+    fprintf(stderr, "argv[0] is not set?!?!\n");
+    return 1;
+  }
+
+  char **const array = malloc(sizeof(char *) * (argc + 2));
 
   if (array == NULL) {
     fprintf(stderr, "OOM\n");
@@ -24,8 +29,8 @@ int main(const int argc, char *const *const argv) {
 
   array[0] = NODE_PATH;
   array[1] = EXEC_DIR;
-  for (size_t i = 0; i < (size_t)argc; ++i) {
-    array[2 + i] = argv[i];
+  for (size_t i = 1; i < (size_t)argc; ++i) {
+    array[1 + i] = argv[i];
   }
 
   array[argc + 2] = NULL;
