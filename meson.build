@@ -13,119 +13,100 @@ project(
     version: '1.1.4',
 )
 
-
 pnpm = find_program(
     'pnpm',
     required: true,
 )
 
-helper_script_depend_files = files(
-    'src/variants/base.ts',
-    'src/variants/data.ts',
-    'src/variants/index.ts',
-    'src/all_cases.ts',
-    'src/compression.ts',
-    'src/generator.ts',
-    'src/hpack.ts',
-    'src/log.ts',
-    'src/subcommands.ts',
+c_variant_generator_script_depend_files = files(
+    'src/base.ts',
+    'src/data.ts',
     'src/utils.ts',
-    'src/ws_tests.ts',
+    'src/variants.ts',
     'index.ts',
 )
 
-helper_script_depends = []
+c_variant_generator_script_depends = []
 
 meson_wrapper_sh = find_program(meson.current_source_dir() / 'meson_wrapper.sh')
 
 install_dependencies = custom_target(
-    'install dependencies (helper script)',
+    'install dependencies (c_variant_generator script)',
     command: [
         meson_wrapper_sh,
-        '--wrapper-generate',
-        '@OUTPUT0@',
-        '--link-file',
-        '@CURRENT_SOURCE_DIR@/pnpm-lock.yaml',
+        '--wrapper-generate', '@OUTPUT0@',
+        '--link-file', '@CURRENT_SOURCE_DIR@/pnpm-lock.yaml',
         '@OUTPUT1@',
         pnpm,
-        '--dir',
-        meson.current_source_dir(),
+        '--dir', meson.current_source_dir(),
         'exec',
         pnpm,
         'install',
-        '--loglevel',
-        'error',
+        '--loglevel', 'error',
     ],
     output: ['install_dependencies_date.txt', 'pnpm-lock-link.yaml'],
     build_subdir: 'generated' / 'pseudo',
     depend_files: ['package.json'],
 )
-helper_script_depends += install_dependencies
+c_variant_generator_script_depends += install_dependencies
 
 type_check_helper_script = custom_target(
-    'typecheck code (helper script)',
+    'typecheck code (c_variant_generator script)',
     command: [
         meson_wrapper_sh,
-        '--wrapper-generate',
-        '@OUTPUT@',
+        '--wrapper-generate', '@OUTPUT@',
         pnpm,
-        '--dir',
-        meson.current_source_dir(),
+        '--dir', meson.current_source_dir(),
         'exec',
         'tsc',
-        '-p',
-        'tsconfig.json',
+        '-p', 'tsconfig.json',
     ],
     output: ['typecheck_code_date.txt'],
     build_subdir: 'generated' / 'pseudo',
     depend_files: ['tsconfig.json'],
     depends: [install_dependencies],
 )
-helper_script_depends += type_check_helper_script
+c_variant_generator_script_depends += type_check_helper_script
 
 lint_helper_script = custom_target(
-    'lint code (helper script)',
+    'lint code (c_variant_generator script)',
     command: [
         meson_wrapper_sh,
-        '--wrapper-generate',
-        '@OUTPUT@',
+        '--wrapper-generate', '@OUTPUT@',
         pnpm,
-        '--dir',
-        meson.current_source_dir(),
+        '--dir', meson.current_source_dir(),
         'run',
         'lint',
     ],
     output: ['lint_code_date.txt'],
     build_subdir: 'generated' / 'pseudo',
-    depend_files: helper_script_depend_files,
+    depend_files: c_variant_generator_script_depend_files,
     depends: [install_dependencies],
 )
-helper_script_depends += lint_helper_script
+c_variant_generator_script_depends += lint_helper_script
 
 build_helper_script = custom_target(
-    'build typescript code (helper script)',
+    'build typescript code (c_variant_generator script)',
     command: [
         meson_wrapper_sh,
-        '--wrapper-generate',
-        '@OUTPUT@',
+        '--wrapper-generate', '@OUTPUT@',
         pnpm,
-        '--dir',
-        meson.current_source_dir(),
+        '--dir', meson.current_source_dir(),
         'run',
         'build',
     ],
     output: ['build_code_date.txt'],
     build_subdir: 'generated' / 'pseudo',
-    depend_files: helper_script_depend_files,
+    depend_files: c_variant_generator_script_depend_files,
     depends: [install_dependencies],
 )
 
-helper_script_depends += build_helper_script
+c_variant_generator_script_depends += build_helper_script
 
 node = find_program(
     'node',
     required: false,
-    version: '>=24.0.0',  # for .ts execution
+    version: '>=24.0.0', # for .ts execution
 )
 
 deno = find_program(
@@ -150,81 +131,26 @@ else
     error('No JS runtime to generate sources')
 endif
 
+generate_program_sh = find_program(meson.current_source_dir() / 'generate_program.sh')
 
-all_variants_generated_tgt = custom_target(
-    'all_variants',
+c_variant_generator_file = custom_target(
     command: [
+        generate_program_sh,
         node_like_runtime,
         '@CURRENT_SOURCE_DIR@',
-        'generator',
-        '--type',
-        'c_variants',
-        '-o',
         '@OUTPUT@',
-        '-i',
-        '@INPUT@',
     ],
-    input: [meson.project_source_root() / 'src' / 'all.variants.def.json'],
-    output: ['all_variants.h'],
-    build_subdir: 'generated' / 'c' / 'variants',
-    depend_files: helper_script_depend_files,
-    depends: helper_script_depends,
+    output: ['c_variant_generator_wrapper.sh'],
+    depend_files: c_variant_generator_script_depend_files,
+    depends: c_variant_generator_script_depends,
 )
 
-all_variants_dep = declare_dependency(
-    version: meson.project_version(),
-    sources: all_variants_generated_tgt,
-)
+c_variant_generator_file_path = c_variant_generator_file.full_path()
 
+fs = import('fs')
 
-json_variants_generated_tgt = custom_target(
-    'json_variants',
-    command: [
-        node_like_runtime,
-        '@CURRENT_SOURCE_DIR@',
-        'generator',
-        '--type',
-        'c_variants',
-        '-o',
-        '@OUTPUT@',
-        '-i',
-        '@INPUT@',
-    ],
-    input: [meson.project_source_root() / 'src' / 'json' / 'json.variants.def.json'],
-    output: ['json_variants.h'],
-    build_subdir: 'generated' / 'c' / 'variants',
-    depend_files: helper_script_depend_files,
-    depends: helper_script_depends,
-)
+fs.(c_variant_generator_file_path)
 
+c_variant_generator_prog = find_program(c_variant_generator_file_path)
 
-json_variants_dep = declare_dependency(
-    version: meson.project_version(),
-    sources: json_variants_generated_tgt,
-)
-
-
-genrated_variants_generated_tgt = custom_target(
-    'generated_variants',
-    command: [
-        node_like_runtime,
-        '@CURRENT_SOURCE_DIR@',
-        'generator',
-        '--type',
-        'c_variants',
-        '-o',
-        '@OUTPUT@',
-        '-i',
-        '@INPUT@',
-    ],
-    input: [meson.current_source_dir() / 'src' / 'generated.variants.def.json'],
-    output: ['generated_variants.h'],
-    build_subdir: 'generated' / 'c' / 'variants',
-    depend_files: helper_script_depend_files,
-    depends: helper_script_depends,
-)
-
-
-
-
-meson.override_find_program('c_variant_generator')
+meson.override_find_program('c_variant_generator', c_variant_generator_prog)
