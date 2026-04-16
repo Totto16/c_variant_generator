@@ -189,17 +189,6 @@ export async function writeFileAndDirs(file: string, content: string): Promise<v
 }
 
 
-export function getOtherFile(inputFile: string, expectedExtension: string, otherExtension: string): string {
-
-
-    assert(path.extname(inputFile) == expectedExtension, `file has to end in "${expectedExtension}"`)
-
-    assert(otherExtension.includes("."), `"${otherExtension}" has to have a dot '.'`)
-
-    const otherFile = path.join(path.dirname(inputFile), path.basename(inputFile).replace(expectedExtension, otherExtension))
-
-    return otherFile;
-}
 
 
 export function isUTF8String(text: string): boolean {
