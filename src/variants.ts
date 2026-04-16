@@ -1151,10 +1151,7 @@ do {
 				" but expected " TSTR_FMT, VariantName, TSTR_STATIC_FMT_ARGS(state_str),
 			TSTR_STATIC_FMT_ARGS(expected_state_str));
 	}
-} while (false)`,
-        //TODO: only define, when not defined, as this is a public API
-        `#define VARIANT_CASE_END()
-	${fileName.MACRO_NAME()}_UNREACHABLE_WITH_MESSAGE_SINGLE("macro trick with for loops for getting the value was implemented wrong")`
+} while (false)`
     ]
 
 
@@ -1232,6 +1229,11 @@ extern "C" {
 #endif
 
 // end utils macros
+
+#ifndef VARIANT_CASE_END
+	#define VARIANT_CASE_END() \
+		${fileName.MACRO_NAME()}_UNREACHABLE_WITH_MESSAGE_SINGLE("macro trick with for loops for getting the value was implemented wrong")
+#endif
 
 ${globalMacros.map(m => m.split("\n").join(" \\\n")).join("\n\n")}
 
