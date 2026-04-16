@@ -1,5 +1,0 @@
-#pragma once
-
-#define NODE_PATH "@node@"
-
-#define EXEC_DIR "@dir@"
