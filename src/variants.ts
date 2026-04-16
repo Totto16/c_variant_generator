@@ -102,11 +102,14 @@ function unionNameFor(name: TaggedName<"union">): string {
     return `_AnonymousUnionForVariant${name.inner.PascalCase()}Impl_DONT_USE`
 }
 
+function enumNarrowName(fileName: CaseName): string {
+    return `_IMPL_${fileName.MACRO_NAME()}_C_23_NARROW_ENUM_TO`
+}
 
-function generateEnumDeclaration(unionEnum: TaggedUnionEnum, member: TaggedMember[], underlyingType: CEnumType | null): string {
+function generateEnumDeclaration(unionEnum: TaggedUnionEnum, member: TaggedMember[], underlyingType: CEnumType | null, fileName: CaseName): string {
 
     return `/* @enum value */
-typedef enum${underlyingType === null ? "" : ` C_23_NARROW_ENUM_TO(${cTypeForEnum(underlyingType)})`} {
+typedef enum${underlyingType === null ? "" : ` ${enumNarrowName(fileName)}(${cTypeForEnum(underlyingType)})`} {
 	${member.map((mem, idx) => {
 
         if (underlyingType === "bool") {
@@ -288,8 +291,9 @@ function cConstConditional(mutable: boolean): string {
     return " "
 }
 
-const inlineFunctionSpecifiers = "NODISCARD MAYBE_UNUSED static inline"
-
+function getInlineFunctionSpecifiers(fileName: CaseName): string {
+    return `${fileName.MACRO_NAME()}_NODISCARD ${fileName.MACRO_NAME()}_MAYBE_UNUSED static inline`
+}
 type StructValueType = "tag" | "data"
 
 interface StructValue { name: string, value: string, type: StructValueType }
@@ -364,7 +368,9 @@ function generateStructType(structOrder: StructOrderResolved, values: StructValu
 
 
 
-function generateNewFunctionForMember(member: TaggedMember, taggedUnion: TaggedUnion, unnamedStructMap: UnnamedStructMap, structOrder: StructOrderResolved): string {
+function generateNewFunctionForMember(member: TaggedMember, taggedUnion: TaggedUnion, unnamedStructMap: UnnamedStructMap, structOrder: StructOrderResolved, fileName: CaseName): string {
+
+    const inlineFunctionSpecifiers = getInlineFunctionSpecifiers(fileName);
 
     if (member.type === null) {
         return `${inlineFunctionSpecifiers} ${taggedUnion.name.inner.PascalCase()} ${functionForNewVariant(member, taggedUnion)}(void){
@@ -421,12 +427,13 @@ function functionForGetAsRefVariant(member: TaggedMember, taggedUnion: TaggedUni
 
 }
 
-function generateGetAsFunctionForMember(member: TaggedMember, taggedUnion: TaggedUnion, unnamedStructMap: UnnamedStructMap): string | null {
+function generateGetAsFunctionForMember(member: TaggedMember, taggedUnion: TaggedUnion, unnamedStructMap: UnnamedStructMap, fileName: CaseName): string | null {
+
+    const inlineFunctionSpecifiers = getInlineFunctionSpecifiers(fileName);
 
     if (member.type === null) {
         //doesn't make sense, check if it is presnet yes, but not getting the inner content
         return null;
-
 
 
     } else if (isSimpleTaggedType(member.type)) {
@@ -456,7 +463,9 @@ function generateGetAsFunctionForMember(member: TaggedMember, taggedUnion: Tagge
 }
 
 
-function generateGetAsRefFunctionForMember(member: TaggedMember, taggedUnion: TaggedUnion, unnamedStructMap: UnnamedStructMap, mutable: boolean): string | null {
+function generateGetAsRefFunctionForMember(member: TaggedMember, taggedUnion: TaggedUnion, unnamedStructMap: UnnamedStructMap, mutable: boolean, fileName: CaseName): string | null {
+
+    const inlineFunctionSpecifiers = getInlineFunctionSpecifiers(fileName);
 
     if (member.type === null) {
         //doesn't make sense, check if it is presnet yes, but not getting the inner content
@@ -483,17 +492,17 @@ function generateGetAsRefFunctionForMember(member: TaggedMember, taggedUnion: Ta
 
 }
 
-function generateGetAsRefFunctionsForMember(member: TaggedMember, taggedUnion: TaggedUnion, unnamedStructMap: UnnamedStructMap): (string | null)[] {
-    return [generateGetAsRefFunctionForMember(member, taggedUnion, unnamedStructMap, true), generateGetAsRefFunctionForMember(member, taggedUnion, unnamedStructMap, false)]
+function generateGetAsRefFunctionsForMember(member: TaggedMember, taggedUnion: TaggedUnion, unnamedStructMap: UnnamedStructMap, fileName: CaseName): (string | null)[] {
+    return [generateGetAsRefFunctionForMember(member, taggedUnion, unnamedStructMap, true, fileName), generateGetAsRefFunctionForMember(member, taggedUnion, unnamedStructMap, false, fileName)]
 }
 
 
-function generateMemberFunctionsForMember(member: TaggedMember, taggedUnion: TaggedUnion, unnamedStructMap: UnnamedStructMap, structOrder: StructOrderResolved): string {
+function generateMemberFunctionsForMember(member: TaggedMember, taggedUnion: TaggedUnion, unnamedStructMap: UnnamedStructMap, structOrder: StructOrderResolved, fileName: CaseName): string {
 
     const functions: string[] = [
-        generateNewFunctionForMember(member, taggedUnion, unnamedStructMap, structOrder),
-        generateGetAsFunctionForMember(member, taggedUnion, unnamedStructMap),
-        ...generateGetAsRefFunctionsForMember(member, taggedUnion, unnamedStructMap)
+        generateNewFunctionForMember(member, taggedUnion, unnamedStructMap, structOrder, fileName),
+        generateGetAsFunctionForMember(member, taggedUnion, unnamedStructMap, fileName),
+        ...generateGetAsRefFunctionsForMember(member, taggedUnion, unnamedStructMap, fileName)
     ].filter((fn: string | null): fn is string => fn !== null)
 
 
@@ -513,7 +522,9 @@ function getTagTypeFunctionName(name: TaggedName<"union">): string {
     return `get_current_tag_type_for_${name.inner.snake_case()}`
 }
 
-function generateFunctions(taggedUnion: TaggedUnion, unnamedStructMap: UnnamedStructMap, structOrder: StructOrderResolved): string {
+function generateFunctions(taggedUnion: TaggedUnion, unnamedStructMap: UnnamedStructMap, structOrder: StructOrderResolved, fileName: CaseName): string {
+
+    const inlineFunctionSpecifiers = getInlineFunctionSpecifiers(fileName);
 
     return `${inlineFunctionSpecifiers} tstr_static ${getStateFunctionName(taggedUnion.name)}(${taggedUnion.enum.name.inner.PascalCase()} ${cConst} enum_value){
 			_Pragma ("GCC diagnostic push") _Pragma ("GCC diagnostic ignored \\"-Wswitch-bool\\"") /* FOR GCC */
@@ -535,7 +546,7 @@ ${inlineFunctionSpecifiers} ${taggedUnion.enum.name.inner.PascalCase()} ${getTag
 
 ${taggedUnion.member.map((mem): string => {
 
-            return generateMemberFunctionsForMember(mem, taggedUnion, unnamedStructMap, structOrder);
+            return generateMemberFunctionsForMember(mem, taggedUnion, unnamedStructMap, structOrder, fileName);
 
         }).join("\n")}
 `
@@ -860,7 +871,7 @@ function getVariantDeclarationMacro(end: boolean): string {
     return `__INTERNAL_VARIANT_DECLARATION_${end ? "END" : "START"}_IMPL_`
 }
 
-function generatedUnionForCHeader(taggedUnion: TaggedUnion): string {
+function generatedUnionForCHeader(taggedUnion: TaggedUnion, fileName: CaseName): string {
 
     assert(taggedUnion.member.length >= 2, "at least two member are required")
 
@@ -886,7 +897,7 @@ function generatedUnionForCHeader(taggedUnion: TaggedUnion): string {
         generateVariantDeclaration(taggedUnion, unnamedStructMap, structOrder)
     ]
 
-    const functionsString: string = generateFunctions(taggedUnion, unnamedStructMap, structOrder)
+    const functionsString: string = generateFunctions(taggedUnion, unnamedStructMap, structOrder, fileName)
 
     const tagName: string = getUnionTagName(taggedUnion.name);
 
@@ -900,7 +911,7 @@ function generatedUnionForCHeader(taggedUnion: TaggedUnion): string {
     }
 
     const generateMacroEnum = `#define GENERATE_VARIANT_ENUM_${taggedUnion.name.inner.MACRO_NAME()}()
-	${[generateEnumDeclaration(taggedUnion.enum, taggedUnion.member, underlyingType)].map(decl => decl.split("\n").join("\n	")).join("\n	\n")}`
+	${[generateEnumDeclaration(taggedUnion.enum, taggedUnion.member, underlyingType, fileName)].map(decl => decl.split("\n").join("\n	")).join("\n	\n")}`
 
 
     const generateMacroCore = `#define GENERATE_VARIANT_CORE_${taggedUnion.name.inner.MACRO_NAME()}()
@@ -1121,29 +1132,29 @@ export async function generateVariantCodeC(generatedVariantsFileH: string, input
     }
 
     const globalMacros: string[] = [
-        `#define UNREACHABLE_WITH_MESSAGE(msg, ...) do {
+        `#define ${fileName.MACRO_NAME()}_UNREACHABLE_WITH_MESSAGE(msg, ...) do {
 	fprintf(stderr,
 		"[%s %s:%d]: UNREACHABLE: " msg "\\n",
 		__func__, __FILE__, __LINE__, __VA_ARGS__
 	);
-		UNREACHABLE();
+		${fileName.MACRO_NAME()}_UNREACHABLE();
 } while (false)`,
         // 
-        `#define UNREACHABLE_WITH_MESSAGE_SINGLE(msg) UNREACHABLE_WITH_MESSAGE(msg "%s", "")`,
+        `#define ${fileName.MACRO_NAME()}_UNREACHABLE_WITH_MESSAGE_SINGLE(msg) ${fileName.MACRO_NAME()}_UNREACHABLE_WITH_MESSAGE(msg "%s", "")`,
         // 
         `#define ${genericStateAssert}(state, expected_state, variant_name, VariantName)
 do {
 	if ((state) != (expected_state)) {
 		tstr_static ${cConst} state_str = ${stateStrFNPrefix}##variant_name(state);
 		tstr_static ${cConst} expected_state_str = ${stateStrFNPrefix}##variant_name(expected_state);
-		UNREACHABLE_WITH_MESSAGE("Invalid variant access for variant '%s': state was " TSTR_FMT
+		${fileName.MACRO_NAME()}_UNREACHABLE_WITH_MESSAGE("Invalid variant access for variant '%s': state was " TSTR_FMT
 				" but expected " TSTR_FMT, VariantName, TSTR_STATIC_FMT_ARGS(state_str),
 			TSTR_STATIC_FMT_ARGS(expected_state_str));
 	}
 } while (false)`,
-        //
+        //TODO: only define, when not defined, as this is a public API
         `#define VARIANT_CASE_END()
-	UNREACHABLE_WITH_MESSAGE_SINGLE("macro trick with for loops for getting the value was implemented wrong")`
+	${fileName.MACRO_NAME()}_UNREACHABLE_WITH_MESSAGE_SINGLE("macro trick with for loops for getting the value was implemented wrong")`
     ]
 
 
@@ -1179,10 +1190,53 @@ extern "C" {
 	${getVariantDeclarationMacro(false)}()
 #endif
 
+// utils macros
+
+
+#if !defined(VARIANT_IMPL_${fileName.MACRO_NAME()}_COMPILED_WITH_NARROWED_ENUMS)
+	#error "define 'VARIANT_IMPL_${fileName.MACRO_NAME()}_COMPILED_WITH_NARROWED_ENUMS' to make enums work in all cases"
+#elif VARIANT_IMPL_${fileName.MACRO_NAME()}_COMPILED_WITH_NARROWED_ENUMS == 1
+	#define ${enumNarrowName(fileName)}(x) : x
+#elif VARIANT_IMPL_${fileName.MACRO_NAME()}_COMPILED_WITH_NARROWED_ENUMS == 0
+	#define ${enumNarrowName(fileName)}(x)
+#else
+	#error "value of 'VARIANT_IMPL_${fileName.MACRO_NAME()}_COMPILED_WITH_NARROWED_ENUMS' can only be 0 or 1 (like a boolean)"
+#endif
+
+#if (defined(__STDC_VERSION__) && __STDC_VERSION__ >= 202000) || __cplusplus
+	#define ${fileName.MACRO_NAME()}_NODISCARD [[nodiscard]]
+	#define ${fileName.MACRO_NAME()}_MAYBE_UNUSED [[maybe_unused]]
+#else
+    // see e.g. https://www.gnu.org/software/gnulib/manual/html_node/Attributes.html
+	#define ${fileName.MACRO_NAME()}_NODISCARD __attribute__((__warn_unused_result__))
+	#define ${fileName.MACRO_NAME()}_MAYBE_UNUSED __attribute__((__unused__))
+#endif
+
+#define ${fileName.MACRO_NAME()}_UNUSED(v) ((void)(v))
+
+// cool trick from here:
+// https://stackoverflow.com/questions/777261/avoiding-unused-variables-warnings-when-using-assert-in-a-release-build
+#ifdef NDEBUG
+	#define ${fileName.MACRO_NAME()}_UNREACHABLE() \
+		do { \
+			fprintf(stderr, "[%s %s:%d]: UNREACHABLE\\n", __func__, __FILE__, __LINE__); \
+			exit(EXIT_FAILURE); \
+		} while(false)
+#else
+	#include <assert.h>
+
+	#define ${fileName.MACRO_NAME()}_UNREACHABLE() \
+		do { \
+			assert(false && "UNREACHABLE"); /* NOLINT(cert-dcl03-c,misc-static-assert) */ \
+		} while(false)
+#endif
+
+// end utils macros
+
 ${globalMacros.map(m => m.split("\n").join(" \\\n")).join("\n\n")}
 
 
-${taggedUnions.map(un => generatedUnionForCHeader(un)).join("\n\n")}
+${taggedUnions.map(un => generatedUnionForCHeader(un, fileName)).join("\n\n")}
 
 
 #ifdef __cplusplus
