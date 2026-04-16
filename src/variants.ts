@@ -1115,9 +1115,7 @@ function validateTaggedUnion(union: TaggedUnion): void {
 
 export async function generateVariantCodeC(generatedVariantsFileH: string, inputDataPath: string): Promise<void> {
 
-    const tasks: Promise<void>[] = []
-
-    assert(path.extname(generatedVariantsFileH) == ".h", "variant file has to end in .h")
+    //TODO: here
 
     const fileName = CaseName.fromSnakeCase(path.basename(generatedVariantsFileH).replace(/\.[^.]*$/, ""))
 

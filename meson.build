@@ -22,6 +22,12 @@ compile_flags = [
 
 
 deps += dependency(
+    'cwalk',
+    allow_fallback: true,
+    version: ['>=1.0.0', '<2'],
+)
+
+deps += dependency(
     'tvec.h',
     allow_fallback: true,
     version: ['>=1.0.0', '<2'],
@@ -144,11 +150,14 @@ deps += dependency(
     version: ['>=1.0.1', '<2'],
 )
 
-maybe_c_variant_generator = find_program('c_variant_generator', required: false)
+maybe_c_variant_generator = find_program(
+    'c_variant_generator',
+    required: false,
+)
 
 if maybe_c_variant_generator.found()
     error(
-        'tjson requested "c_variant_generator", but it should fallback, as it can\'t use the current project as its in a recursive dependency chain',
+        'tjson requested "c_variant_generator", but it should fallback, as it can\'t use the current project as its in a recursive dependency chain'
     )
 endif
 
