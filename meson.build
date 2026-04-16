@@ -15,7 +15,11 @@ project(
 )
 
 deps = []
-compile_flags = []
+compile_flags = [
+    '-D_C_VARIANT_GENERATOR_PROGRAM_NAME=' + meson.project_name(),
+    '-D_C_VARIANT_GENERATOR_VERSION_STRING=' + meson.project_version(),
+]
+
 
 deps += dependency(
     'tvec.h',
@@ -40,12 +44,6 @@ deps += dependency(
 
 deps += dependency(
     'tstr_builder',
-    allow_fallback: true,
-    version: ['>=1.0.0', '<2'],
-)
-
-deps += dependency(
-    'tjson',
     allow_fallback: true,
     version: ['>=1.0.0', '<2'],
 )
@@ -133,6 +131,30 @@ src_files = []
 inc_dirs = []
 
 subdir('src')
+
+# NOTE: this is a recursive dependency, as tjson depends on this generator
+
+empty_dep = declare_dependency()
+
+meson.override_dependency('tjson_fallback_to_internal_variant', empty_dep)
+
+deps += dependency(
+    'tjson',
+    allow_fallback: true,
+    version: ['>=1.0.1', '<2'],
+)
+
+maybe_c_variant_generator = find_program('c_variant_generator', required: false)
+
+if maybe_c_variant_generator.found()
+    error(
+        'tjson requested "c_variant_generator", but it should fallback, as it can\'t use the current project as its in a recursive dependency chain',
+    )
+endif
+
+internal_c_args += '-DTJSON_ALLOW_BOOTSTRAP=1'
+
+#en of recursive dependency
 
 c_variant_generator_exe = executable(
     'c_variant_generator_exe',
