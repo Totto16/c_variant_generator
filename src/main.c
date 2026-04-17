@@ -55,8 +55,19 @@ typedef struct {
 	const char* const* data;
 } ProgramArgs;
 
+#ifdef NDEBUG
+static void assert_fn(const char* const expr, bool value) {
+	OOM_ASSERT(value, expr);
+}
+	#define ASSERT_EXPR(expr) assert_fn(#expr, expr)
+#else
+	#define ASSERT_EXPR(expr) assert(expr)
+#endif
+
 #define PROGRAM_ARGS_AT(args, index) \
-	(assert((index) < (args).size), tstr_static_from_static_cstr((args).data[(index)]))
+	(ASSERT_EXPR((index) < (args).size), tstr_static_from_static_cstr((args).data[(index)]))
+
+void make_expr(void);
 
 static ExitCode rich_main(const ProgramArgs args) {
 	if(args.size < 1) {
