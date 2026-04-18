@@ -210,48 +210,131 @@ NODISCARD static JsonSchema get_json_schema(void) {
 		assert(tstr_static_is_null(add_result));
 	}
 
-	/*
-	const StructOrderZ = z.xor([z.literal("auto"), z.literal("tag_first"),
-	z.literal("tag_second")])
+	JsonSchemaOneOf* StructOrderZ = json_schema_one_of_get_empty();
 
-	const StructOrderRequirementZ = z.xor([z.literal("best_size"), z.literal("aligned_access")])
+	{
 
+		add_result = json_schema_one_of_add_entry(StructOrderZ,
+		                                          new_json_schema_literal(JSON_SCHEMA_LIT("auto")));
+		assert(tstr_static_is_null(add_result));
 
+		add_result = json_schema_one_of_add_entry(
+		    StructOrderZ, new_json_schema_literal(JSON_SCHEMA_LIT("tag_first")));
+		assert(tstr_static_is_null(add_result));
 
-	const ParsedTaggedUnionRequirementsZ = z.object(
-	    {
-	        order: StructOrderRequirementZ.optional()
-	    }
-	).strict()
+		add_result = json_schema_one_of_add_entry(
+		    StructOrderZ, new_json_schema_literal(JSON_SCHEMA_LIT("tag_second")));
+		assert(tstr_static_is_null(add_result));
+	}
 
+	JsonSchemaOneOf* StructOrderRequirementZ = json_schema_one_of_get_empty();
 
+	{
 
-	const ParsedCppFeaturesZ = z.object(
-	    {
-	        tagAsErrorVariant: z.boolean().optional()
-	    }
-	).strict()
+		add_result = json_schema_one_of_add_entry(
+		    StructOrderRequirementZ, new_json_schema_literal(JSON_SCHEMA_LIT("best_size")));
+		assert(tstr_static_is_null(add_result));
 
+		add_result = json_schema_one_of_add_entry(
+		    StructOrderRequirementZ, new_json_schema_literal(JSON_SCHEMA_LIT("aligned_access")));
+		assert(tstr_static_is_null(add_result));
+	}
 
-	const ParsedOptionsZ = z.object({
-	    rawStruct: ParsedNameZ.optional(),
-	    structOrder: StructOrderZ.optional(),
-	    requirements: ParsedTaggedUnionRequirementsZ.optional(),
-	    cppFeatures: ParsedCppFeaturesZ.optional(),
-	}).strict()
+	JsonSchemaObject* ParsedTaggedUnionRequirementsZ = json_schema_object_get(false);
 
+	{
 
-	    const auto ParsedTaggedUnionZ = z.object({
-	                                         name : ParsedNameZ,
-	                                         member : z.array(ParsedTaggedMemberZ).min(2),
-	                                         enum : ParsedEnumZ,
-	                                         options : z.optional(ParsedOptionsZ).optional()
-	                                     })
-	                                        .strict();
+		tstr order = TSTR_LIT("order");
 
-	    const auto ParsedTaggedUnionFullSchemaZ = z.array(ParsedTaggedUnionZ).min(1); */
+		add_result =
+		    json_schema_object_add_entry(ParsedTaggedUnionRequirementsZ, &order,
+		                                 new_json_schema_one_of(StructOrderRequirementZ), false);
+		assert(tstr_static_is_null(add_result));
+	}
 
-	return ParsedTaggedUnionFullSchemaZ;
+	JsonSchemaObject* ParsedCppFeaturesZ = json_schema_object_get(false);
+
+	{
+
+		tstr order = TSTR_LIT("tagAsErrorVariant");
+
+		add_result = json_schema_object_add_entry(ParsedCppFeaturesZ, &order,
+		                                          new_json_schema_boolean(), false);
+		assert(tstr_static_is_null(add_result));
+	}
+
+	JsonSchemaObject* ParsedOptionsZ = json_schema_object_get(false);
+
+	{
+
+		tstr rawStruct = TSTR_LIT("rawStruct");
+
+		add_result = json_schema_object_add_entry(ParsedOptionsZ, &rawStruct,
+		                                          new_json_schema_one_of(ParsedNameZ), false);
+		assert(tstr_static_is_null(add_result));
+
+		tstr structOrder = TSTR_LIT("structOrder");
+
+		add_result = json_schema_object_add_entry(ParsedOptionsZ, &structOrder,
+		                                          new_json_schema_one_of(StructOrderZ), false);
+		assert(tstr_static_is_null(add_result));
+
+		tstr requirements = TSTR_LIT("requirements");
+
+		add_result = json_schema_object_add_entry(
+		    ParsedOptionsZ, &requirements, new_json_schema_object(ParsedTaggedUnionRequirementsZ),
+		    false);
+		assert(tstr_static_is_null(add_result));
+
+		tstr cppFeatures = TSTR_LIT("cppFeatures");
+
+		add_result = json_schema_object_add_entry(
+		    ParsedOptionsZ, &cppFeatures, new_json_schema_object(ParsedCppFeaturesZ), false);
+		assert(tstr_static_is_null(add_result));
+	}
+
+	JsonSchemaObject* ParsedTaggedUnionZ = json_schema_object_get(false);
+
+	{
+
+		tstr name = TSTR_LIT("name");
+
+		add_result = json_schema_object_add_entry(ParsedTaggedUnionZ, &name,
+		                                          new_json_schema_one_of(ParsedNameZ), true);
+		assert(tstr_static_is_null(add_result));
+
+		JsonSchemaArray* ParsedTaggedUnionZMember =
+		    json_schema_array_get(new_json_schema_object(ParsedTaggedMemberZ), true);
+		assert(ParsedTaggedUnionZMember != NULL);
+		add_result = json_schema_array_set_min(ParsedTaggedUnionZMember, 2);
+		assert(tstr_static_is_null(add_result));
+
+		tstr member = TSTR_LIT("member");
+
+		add_result = json_schema_object_add_entry(
+		    ParsedTaggedUnionZ, &member, new_json_schema_array(ParsedTaggedUnionZMember), true);
+		assert(tstr_static_is_null(add_result));
+
+		tstr enum_ = TSTR_LIT("enum");
+
+		add_result = json_schema_object_add_entry(ParsedTaggedUnionZ, &enum_,
+		                                          new_json_schema_object(ParsedEnumZ), true);
+		assert(tstr_static_is_null(add_result));
+
+		tstr options = TSTR_LIT("options");
+
+		add_result = json_schema_object_add_entry(ParsedTaggedUnionZ, &options,
+		                                          new_json_schema_object(ParsedOptionsZ), false);
+		assert(tstr_static_is_null(add_result));
+	}
+
+	JsonSchemaArray* ParsedTaggedUnionFullSchemaZ =
+	    json_schema_array_get(new_json_schema_object(ParsedTaggedUnionZ), true);
+	assert(ParsedTaggedUnionFullSchemaZ != NULL);
+	add_result = json_schema_array_set_min(ParsedTaggedUnionFullSchemaZ, 1);
+	assert(tstr_static_is_null(add_result));
+
+	return new_json_schema_array(ParsedTaggedUnionFullSchemaZ);
 }
 
 NODISCARD tstr generate_json_schema(void) {
