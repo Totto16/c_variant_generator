@@ -117,12 +117,13 @@ static ExitCode rich_main(const ProgramArgs args) {
 			}
 
 			if(is_schema_print(first_val)) {
-				const tstr schema_as_string = generate_json_schema();
+				tstr schema_as_string = generate_json_schema();
 				if(tstr_is_null(&schema_as_string)) {
 					fprintf(stderr, "failed to get schema as string\n");
 					return ExitCodeFailure;
 				}
 				printf(TSTR_FMT "\n", TSTR_FMT_ARGS(schema_as_string));
+				tstr_free(&schema_as_string);
 
 				return ExitCodeSuccess;
 			}
