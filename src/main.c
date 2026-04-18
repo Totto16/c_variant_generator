@@ -8,6 +8,7 @@
 #include <tstr.h>
 
 #include "./generate.h"
+#include "./json.h"
 #include "./utils.h"
 
 #define IDENT1 "\t"
@@ -44,6 +45,26 @@ NODISCARD static bool is_version_string(const tstr_static str) {
 	}
 
 	if(tstr_static_eq(str, TSTR_STATIC_LIT("-v"))) {
+		return true;
+	}
+
+	return false;
+}
+
+NODISCARD static bool is_schema_print(const tstr_static str) {
+	if(tstr_static_eq(str, TSTR_STATIC_LIT("--get-schema"))) {
+		return true;
+	}
+
+	if(tstr_static_eq(str, TSTR_STATIC_LIT("--print-schema"))) {
+		return true;
+	}
+
+	if(tstr_static_eq(str, TSTR_STATIC_LIT("-g"))) {
+		return true;
+	}
+
+	if(tstr_static_eq(str, TSTR_STATIC_LIT("-p"))) {
 		return true;
 	}
 
@@ -92,6 +113,17 @@ static ExitCode rich_main(const ProgramArgs args) {
 
 			if(is_version_string(first_val)) {
 				printf(STRINGIFY(_C_VARIANT_GENERATOR_VERSION_STRING) "\n");
+				return ExitCodeSuccess;
+			}
+
+			if(is_schema_print(first_val)) {
+				const tstr schema_as_string = generate_json_schema();
+				if(tstr_is_null(&schema_as_string)) {
+					fprintf(stderr, "failed to get schema as string\n");
+					return ExitCodeFailure;
+				}
+				printf(TSTR_FMT "\n", TSTR_FMT_ARGS(schema_as_string));
+
 				return ExitCodeSuccess;
 			}
 		}
