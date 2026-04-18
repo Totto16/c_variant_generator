@@ -1,6 +1,8 @@
 src_files += files(
     'generate.c',
     'generate.h',
+    'json.c',
+    'json.h',
     'main.c',
     'utils.h',
 )

@@ -3,8 +3,6 @@ import { type TaggedUnion, CaseName, makeStructType, makeStructMember, makeSimpl
 import * as z from "zod";
 import fsAsync from "node:fs/promises"
 
-
-
 const ParsedNamePascalCaseZ = z.string().nonempty().regex(/^[A-Z][a-zA-Z0-9]*$/)
 
 const ParsedNameFromPartsZ = z.array(z.string().nonempty().regex(/^([A-Z0-9]*)|([a-z0-9]*)$/)).min(2)
@@ -230,7 +228,6 @@ export function outputVariantJsonSchema(): void {
         cycles: "throw",
         reused: "ref",
         target: "draft-2020-12"
-
     })
 
     console.log(JSON.stringify(schema))
