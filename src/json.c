@@ -5,21 +5,30 @@
 NODISCARD static JsonSchema get_json_schema(void) {
 
 	JsonSchemaString* ParsedNamePascalCaseZ = json_schema_string_get();
-	//.nonempty().regex(/^[A-Z][a-zA-Z0-9]*$/)
+	tstr_static add_result = json_schema_string_set_nonempty(ParsedNamePascalCaseZ);
+	assert(tstr_static_is_null(add_result));
+	add_result = json_schema_string_set_regex(ParsedNamePascalCaseZ,
+	                                          json_schema_regex_get("/^[A-Z][a-zA-Z0-9]*$/"));
+	assert(tstr_static_is_null(add_result));
 
 	JsonSchemaString* ParsedNameFromPartsZItems = json_schema_string_get();
-	//.nonempty().regex(/^([A-Z0-9]*)|([a-z0-9]*)$/)
+	add_result = json_schema_string_set_nonempty(ParsedNameFromPartsZItems);
+	assert(tstr_static_is_null(add_result));
+	add_result = json_schema_string_set_regex(ParsedNameFromPartsZItems,
+	                                          json_schema_regex_get("/^([A-Z0-9]*)|([a-z0-9]*)$/"));
+	assert(tstr_static_is_null(add_result));
 
 	JsonSchemaArray* ParsedNameFromPartsZ =
 	    json_schema_array_get(new_json_schema_string(ParsedNameFromPartsZItems));
-	// ).min(2)
+	add_result = json_schema_array_set_min(ParsedNameFromPartsZ, 2);
+	assert(tstr_static_is_null(add_result));
 
 	JsonSchemaOneOf* ParsedNameZ = json_schema_one_of_get_empty();
 
 	{
 
-		tstr_static add_result = json_schema_one_of_add_entry(
-		    ParsedNameZ, new_json_schema_string(ParsedNamePascalCaseZ));
+		add_result = json_schema_one_of_add_entry(ParsedNameZ,
+		                                          new_json_schema_string(ParsedNamePascalCaseZ));
 		assert(tstr_static_is_null(add_result));
 
 		add_result =
@@ -28,7 +37,8 @@ NODISCARD static JsonSchema get_json_schema(void) {
 	}
 
 	JsonSchemaString* ParsedCTypeZ = json_schema_string_get();
-	//.nonempty()
+	add_result = json_schema_string_set_nonempty(ParsedCTypeZ);
+	assert(tstr_static_is_null(add_result));
 
 	JsonSchemaObject* ParsedTaggedTypeStructMemberZ = json_schema_object_get_empty();
 
@@ -36,14 +46,15 @@ NODISCARD static JsonSchema get_json_schema(void) {
 
 		tstr typeName = TSTR_LIT("typeName");
 
-		tstr_static add_result = json_schema_object_add_entry(
-		    ParsedTaggedTypeStructMemberZ, &typeName, new_json_schema_string(ParsedCTypeZ), true);
+		add_result = json_schema_object_add_entry(ParsedTaggedTypeStructMemberZ, &typeName,
+		                                          new_json_schema_string(ParsedCTypeZ), true);
 		assert(tstr_static_is_null(add_result));
 
 		tstr name = TSTR_LIT("name");
 
 		JsonSchemaString* NameSchema = json_schema_string_get();
-		//.nonempty()
+		add_result = json_schema_string_set_nonempty(NameSchema);
+		assert(tstr_static_is_null(add_result));
 
 		add_result = json_schema_object_add_entry(ParsedTaggedTypeStructMemberZ, &name,
 		                                          new_json_schema_string(NameSchema), true);
