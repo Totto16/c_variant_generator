@@ -19,7 +19,7 @@ NODISCARD static JsonSchema get_json_schema(void) {
 	assert(tstr_static_is_null(add_result));
 
 	JsonSchemaArray* ParsedNameFromPartsZ =
-	    json_schema_array_get(new_json_schema_string(ParsedNameFromPartsZItems), true);
+	    json_schema_array_get(new_json_schema_string_rc(ParsedNameFromPartsZItems), true);
 	assert(ParsedNameFromPartsZ != NULL);
 	add_result = json_schema_array_set_min(ParsedNameFromPartsZ, 2);
 	assert(tstr_static_is_null(add_result));
@@ -29,11 +29,11 @@ NODISCARD static JsonSchema get_json_schema(void) {
 	{
 
 		add_result = json_schema_one_of_add_entry(ParsedNameZ,
-		                                          new_json_schema_string(ParsedNamePascalCaseZ));
+		                                          new_json_schema_string_rc(ParsedNamePascalCaseZ));
 		assert(tstr_static_is_null(add_result));
 
-		add_result =
-		    json_schema_one_of_add_entry(ParsedNameZ, new_json_schema_array(ParsedNameFromPartsZ));
+		add_result = json_schema_one_of_add_entry(ParsedNameZ,
+		                                          new_json_schema_array_rc(ParsedNameFromPartsZ));
 		assert(tstr_static_is_null(add_result));
 	}
 
@@ -48,7 +48,7 @@ NODISCARD static JsonSchema get_json_schema(void) {
 		tstr typeName = TSTR_LIT("typeName");
 
 		add_result = json_schema_object_add_entry(ParsedTaggedTypeStructMemberZ, &typeName,
-		                                          new_json_schema_string(ParsedCTypeZ), true);
+		                                          new_json_schema_string_rc(ParsedCTypeZ), true);
 		assert(tstr_static_is_null(add_result));
 
 		JsonSchemaString* NameSchema = json_schema_string_get();
@@ -58,7 +58,7 @@ NODISCARD static JsonSchema get_json_schema(void) {
 		tstr name = TSTR_LIT("name");
 
 		add_result = json_schema_object_add_entry(ParsedTaggedTypeStructMemberZ, &name,
-		                                          new_json_schema_string(NameSchema), true);
+		                                          new_json_schema_string_rc(NameSchema), true);
 		assert(tstr_static_is_null(add_result));
 	}
 
@@ -70,8 +70,8 @@ NODISCARD static JsonSchema get_json_schema(void) {
 
 		{
 
-			JsonSchemaArray* ParsedTaggedTypeStructZMembers =
-			    json_schema_array_get(new_json_schema_object(ParsedTaggedTypeStructMemberZ), true);
+			JsonSchemaArray* ParsedTaggedTypeStructZMembers = json_schema_array_get(
+			    new_json_schema_object_rc(ParsedTaggedTypeStructMemberZ), true);
 			assert(ParsedTaggedTypeStructZMembers != NULL);
 			add_result = json_schema_array_set_min(ParsedTaggedTypeStructZMembers, 1);
 			assert(tstr_static_is_null(add_result));
@@ -80,7 +80,7 @@ NODISCARD static JsonSchema get_json_schema(void) {
 
 			add_result = json_schema_object_add_entry(
 			    ParsedTaggedTypeStructZMemberObject, &members,
-			    new_json_schema_array(ParsedTaggedTypeStructZMembers), true);
+			    new_json_schema_array_rc(ParsedTaggedTypeStructZMembers), true);
 			assert(tstr_static_is_null(add_result));
 		}
 
@@ -88,7 +88,7 @@ NODISCARD static JsonSchema get_json_schema(void) {
 
 		add_result = json_schema_object_add_entry(
 		    ParsedTaggedTypeStructZ, &struct_,
-		    new_json_schema_object(ParsedTaggedTypeStructZMemberObject), true);
+		    new_json_schema_object_rc(ParsedTaggedTypeStructZMemberObject), true);
 		assert(tstr_static_is_null(add_result));
 	}
 
@@ -103,7 +103,7 @@ NODISCARD static JsonSchema get_json_schema(void) {
 		tstr name = TSTR_LIT("name");
 
 		add_result = json_schema_object_add_entry(ParsedTaggedTypeSimpleZ, &name,
-		                                          new_json_schema_string(NameSchema), true);
+		                                          new_json_schema_string_rc(NameSchema), true);
 		assert(tstr_static_is_null(add_result));
 	}
 
@@ -111,12 +111,12 @@ NODISCARD static JsonSchema get_json_schema(void) {
 
 	{
 
-		add_result = json_schema_one_of_add_entry(ParsedTaggedTypeZ,
-		                                          new_json_schema_object(ParsedTaggedTypeStructZ));
+		add_result = json_schema_one_of_add_entry(
+		    ParsedTaggedTypeZ, new_json_schema_object_rc(ParsedTaggedTypeStructZ));
 		assert(tstr_static_is_null(add_result));
 
-		add_result = json_schema_one_of_add_entry(ParsedTaggedTypeZ,
-		                                          new_json_schema_object(ParsedTaggedTypeSimpleZ));
+		add_result = json_schema_one_of_add_entry(
+		    ParsedTaggedTypeZ, new_json_schema_object_rc(ParsedTaggedTypeSimpleZ));
 		assert(tstr_static_is_null(add_result));
 	}
 
@@ -127,7 +127,7 @@ NODISCARD static JsonSchema get_json_schema(void) {
 		tstr name = TSTR_LIT("name");
 
 		add_result = json_schema_object_add_entry(ParsedTaggedMemberZ, &name,
-		                                          new_json_schema_one_of(ParsedNameZ), true);
+		                                          new_json_schema_one_of_rc(ParsedNameZ), true);
 		assert(tstr_static_is_null(add_result));
 
 		JsonSchemaOneOf* TypeSchema = json_schema_one_of_get_empty();
@@ -137,15 +137,15 @@ NODISCARD static JsonSchema get_json_schema(void) {
 			add_result = json_schema_one_of_add_entry(TypeSchema, new_json_schema_null());
 			assert(tstr_static_is_null(add_result));
 
-			add_result =
-			    json_schema_one_of_add_entry(TypeSchema, new_json_schema_one_of(ParsedTaggedTypeZ));
+			add_result = json_schema_one_of_add_entry(TypeSchema,
+			                                          new_json_schema_one_of_rc(ParsedTaggedTypeZ));
 			assert(tstr_static_is_null(add_result));
 		}
 
 		tstr type_ = TSTR_LIT("type");
 
 		add_result = json_schema_object_add_entry(ParsedTaggedMemberZ, &type_,
-		                                          new_json_schema_one_of(TypeSchema), true);
+		                                          new_json_schema_one_of_rc(TypeSchema), true);
 		assert(tstr_static_is_null(add_result));
 	}
 
@@ -153,24 +153,24 @@ NODISCARD static JsonSchema get_json_schema(void) {
 
 	{
 
-		add_result = json_schema_one_of_add_entry(ParsedCEnumTypeZ,
-		                                          new_json_schema_literal(JSON_SCHEMA_LIT("bool")));
+		add_result = json_schema_one_of_add_entry(
+		    ParsedCEnumTypeZ, new_json_schema_literal_rc(json_schema_literal_get_cstr("bool")));
 		assert(tstr_static_is_null(add_result));
 
-		add_result = json_schema_one_of_add_entry(ParsedCEnumTypeZ,
-		                                          new_json_schema_literal(JSON_SCHEMA_LIT("u8")));
+		add_result = json_schema_one_of_add_entry(
+		    ParsedCEnumTypeZ, new_json_schema_literal_rc(json_schema_literal_get_cstr("u8")));
 		assert(tstr_static_is_null(add_result));
 
-		add_result = json_schema_one_of_add_entry(ParsedCEnumTypeZ,
-		                                          new_json_schema_literal(JSON_SCHEMA_LIT("u16")));
+		add_result = json_schema_one_of_add_entry(
+		    ParsedCEnumTypeZ, new_json_schema_literal_rc(json_schema_literal_get_cstr("u16")));
 		assert(tstr_static_is_null(add_result));
 
-		add_result = json_schema_one_of_add_entry(ParsedCEnumTypeZ,
-		                                          new_json_schema_literal(JSON_SCHEMA_LIT("u32")));
+		add_result = json_schema_one_of_add_entry(
+		    ParsedCEnumTypeZ, new_json_schema_literal_rc(json_schema_literal_get_cstr("u32")));
 		assert(tstr_static_is_null(add_result));
 
-		add_result = json_schema_one_of_add_entry(ParsedCEnumTypeZ,
-		                                          new_json_schema_literal(JSON_SCHEMA_LIT("u64")));
+		add_result = json_schema_one_of_add_entry(
+		    ParsedCEnumTypeZ, new_json_schema_literal_rc(json_schema_literal_get_cstr("u64")));
 		assert(tstr_static_is_null(add_result));
 	}
 
@@ -181,7 +181,7 @@ NODISCARD static JsonSchema get_json_schema(void) {
 		tstr name = TSTR_LIT("name");
 
 		add_result = json_schema_object_add_entry(ParsedEnumZ, &name,
-		                                          new_json_schema_one_of(ParsedNameZ), true);
+		                                          new_json_schema_one_of_rc(ParsedNameZ), true);
 		assert(tstr_static_is_null(add_result));
 
 		JsonSchemaOneOf* ParsedCEnumTypeZUnderlyingType = json_schema_one_of_get_empty();
@@ -189,12 +189,12 @@ NODISCARD static JsonSchema get_json_schema(void) {
 		{
 
 			add_result = json_schema_one_of_add_entry(ParsedCEnumTypeZUnderlyingType,
-			                                          new_json_schema_one_of(ParsedCEnumTypeZ));
+			                                          new_json_schema_one_of_rc(ParsedCEnumTypeZ));
 			assert(tstr_static_is_null(add_result));
 
 			add_result = json_schema_one_of_add_entry(
 			    ParsedCEnumTypeZUnderlyingType,
-			    new_json_schema_literal(JSON_SCHEMA_LIT("best_match")));
+			    new_json_schema_literal_rc(json_schema_literal_get_cstr("best_match")));
 			assert(tstr_static_is_null(add_result));
 
 			add_result = json_schema_one_of_add_entry(ParsedCEnumTypeZUnderlyingType,
@@ -205,7 +205,7 @@ NODISCARD static JsonSchema get_json_schema(void) {
 		tstr underlyingType = TSTR_LIT("underlyingType");
 
 		add_result = json_schema_object_add_entry(
-		    ParsedEnumZ, &underlyingType, new_json_schema_one_of(ParsedCEnumTypeZUnderlyingType),
+		    ParsedEnumZ, &underlyingType, new_json_schema_one_of_rc(ParsedCEnumTypeZUnderlyingType),
 		    false);
 		assert(tstr_static_is_null(add_result));
 	}
@@ -214,16 +214,16 @@ NODISCARD static JsonSchema get_json_schema(void) {
 
 	{
 
-		add_result = json_schema_one_of_add_entry(StructOrderZ,
-		                                          new_json_schema_literal(JSON_SCHEMA_LIT("auto")));
+		add_result = json_schema_one_of_add_entry(
+		    StructOrderZ, new_json_schema_literal_rc(json_schema_literal_get_cstr("auto")));
 		assert(tstr_static_is_null(add_result));
 
 		add_result = json_schema_one_of_add_entry(
-		    StructOrderZ, new_json_schema_literal(JSON_SCHEMA_LIT("tag_first")));
+		    StructOrderZ, new_json_schema_literal_rc(json_schema_literal_get_cstr("tag_first")));
 		assert(tstr_static_is_null(add_result));
 
 		add_result = json_schema_one_of_add_entry(
-		    StructOrderZ, new_json_schema_literal(JSON_SCHEMA_LIT("tag_second")));
+		    StructOrderZ, new_json_schema_literal_rc(json_schema_literal_get_cstr("tag_second")));
 		assert(tstr_static_is_null(add_result));
 	}
 
@@ -232,11 +232,13 @@ NODISCARD static JsonSchema get_json_schema(void) {
 	{
 
 		add_result = json_schema_one_of_add_entry(
-		    StructOrderRequirementZ, new_json_schema_literal(JSON_SCHEMA_LIT("best_size")));
+		    StructOrderRequirementZ,
+		    new_json_schema_literal_rc(json_schema_literal_get_cstr("best_size")));
 		assert(tstr_static_is_null(add_result));
 
 		add_result = json_schema_one_of_add_entry(
-		    StructOrderRequirementZ, new_json_schema_literal(JSON_SCHEMA_LIT("aligned_access")));
+		    StructOrderRequirementZ,
+		    new_json_schema_literal_rc(json_schema_literal_get_cstr("aligned_access")));
 		assert(tstr_static_is_null(add_result));
 	}
 
@@ -248,7 +250,7 @@ NODISCARD static JsonSchema get_json_schema(void) {
 
 		add_result =
 		    json_schema_object_add_entry(ParsedTaggedUnionRequirementsZ, &order,
-		                                 new_json_schema_one_of(StructOrderRequirementZ), false);
+		                                 new_json_schema_one_of_rc(StructOrderRequirementZ), false);
 		assert(tstr_static_is_null(add_result));
 	}
 
@@ -270,26 +272,26 @@ NODISCARD static JsonSchema get_json_schema(void) {
 		tstr rawStruct = TSTR_LIT("rawStruct");
 
 		add_result = json_schema_object_add_entry(ParsedOptionsZ, &rawStruct,
-		                                          new_json_schema_one_of(ParsedNameZ), false);
+		                                          new_json_schema_one_of_rc(ParsedNameZ), false);
 		assert(tstr_static_is_null(add_result));
 
 		tstr structOrder = TSTR_LIT("structOrder");
 
 		add_result = json_schema_object_add_entry(ParsedOptionsZ, &structOrder,
-		                                          new_json_schema_one_of(StructOrderZ), false);
+		                                          new_json_schema_one_of_rc(StructOrderZ), false);
 		assert(tstr_static_is_null(add_result));
 
 		tstr requirements = TSTR_LIT("requirements");
 
 		add_result = json_schema_object_add_entry(
-		    ParsedOptionsZ, &requirements, new_json_schema_object(ParsedTaggedUnionRequirementsZ),
-		    false);
+		    ParsedOptionsZ, &requirements,
+		    new_json_schema_object_rc(ParsedTaggedUnionRequirementsZ), false);
 		assert(tstr_static_is_null(add_result));
 
 		tstr cppFeatures = TSTR_LIT("cppFeatures");
 
 		add_result = json_schema_object_add_entry(
-		    ParsedOptionsZ, &cppFeatures, new_json_schema_object(ParsedCppFeaturesZ), false);
+		    ParsedOptionsZ, &cppFeatures, new_json_schema_object_rc(ParsedCppFeaturesZ), false);
 		assert(tstr_static_is_null(add_result));
 	}
 
@@ -300,11 +302,11 @@ NODISCARD static JsonSchema get_json_schema(void) {
 		tstr name = TSTR_LIT("name");
 
 		add_result = json_schema_object_add_entry(ParsedTaggedUnionZ, &name,
-		                                          new_json_schema_one_of(ParsedNameZ), true);
+		                                          new_json_schema_one_of_rc(ParsedNameZ), true);
 		assert(tstr_static_is_null(add_result));
 
 		JsonSchemaArray* ParsedTaggedUnionZMember =
-		    json_schema_array_get(new_json_schema_object(ParsedTaggedMemberZ), true);
+		    json_schema_array_get(new_json_schema_object_rc(ParsedTaggedMemberZ), true);
 		assert(ParsedTaggedUnionZMember != NULL);
 		add_result = json_schema_array_set_min(ParsedTaggedUnionZMember, 2);
 		assert(tstr_static_is_null(add_result));
@@ -312,29 +314,29 @@ NODISCARD static JsonSchema get_json_schema(void) {
 		tstr member = TSTR_LIT("member");
 
 		add_result = json_schema_object_add_entry(
-		    ParsedTaggedUnionZ, &member, new_json_schema_array(ParsedTaggedUnionZMember), true);
+		    ParsedTaggedUnionZ, &member, new_json_schema_array_rc(ParsedTaggedUnionZMember), true);
 		assert(tstr_static_is_null(add_result));
 
 		tstr enum_ = TSTR_LIT("enum");
 
 		add_result = json_schema_object_add_entry(ParsedTaggedUnionZ, &enum_,
-		                                          new_json_schema_object(ParsedEnumZ), true);
+		                                          new_json_schema_object_rc(ParsedEnumZ), true);
 		assert(tstr_static_is_null(add_result));
 
 		tstr options = TSTR_LIT("options");
 
 		add_result = json_schema_object_add_entry(ParsedTaggedUnionZ, &options,
-		                                          new_json_schema_object(ParsedOptionsZ), false);
+		                                          new_json_schema_object_rc(ParsedOptionsZ), false);
 		assert(tstr_static_is_null(add_result));
 	}
 
 	JsonSchemaArray* ParsedTaggedUnionFullSchemaZ =
-	    json_schema_array_get(new_json_schema_object(ParsedTaggedUnionZ), true);
+	    json_schema_array_get(new_json_schema_object_rc(ParsedTaggedUnionZ), true);
 	assert(ParsedTaggedUnionFullSchemaZ != NULL);
 	add_result = json_schema_array_set_min(ParsedTaggedUnionFullSchemaZ, 1);
 	assert(tstr_static_is_null(add_result));
 
-	return new_json_schema_array(ParsedTaggedUnionFullSchemaZ);
+	return new_json_schema_array_rc(ParsedTaggedUnionFullSchemaZ);
 }
 
 NODISCARD tstr generate_json_schema(void) {
