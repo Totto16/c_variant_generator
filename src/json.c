@@ -8,14 +8,14 @@ NODISCARD static JsonSchema get_json_schema(void) {
 	tstr_static add_result = json_schema_string_set_nonempty(ParsedNamePascalCaseZ);
 	assert(tstr_static_is_null(add_result));
 	add_result = json_schema_string_set_regex(ParsedNamePascalCaseZ,
-	                                          json_schema_regex_get("/^[A-Z][a-zA-Z0-9]*$/"));
+	                                          json_schema_regex_get("^[A-Z][a-zA-Z0-9]*$"));
 	assert(tstr_static_is_null(add_result));
 
 	JsonSchemaString* ParsedNameFromPartsZItems = json_schema_string_get();
 	add_result = json_schema_string_set_nonempty(ParsedNameFromPartsZItems);
 	assert(tstr_static_is_null(add_result));
 	add_result = json_schema_string_set_regex(ParsedNameFromPartsZItems,
-	                                          json_schema_regex_get("/^([A-Z0-9]*)|([a-z0-9]*)$/"));
+	                                          json_schema_regex_get("^([A-Z0-9]*)|([a-z0-9]*)$"));
 	assert(tstr_static_is_null(add_result));
 
 	JsonSchemaArray* ParsedNameFromPartsZ =
