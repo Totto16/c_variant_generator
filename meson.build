@@ -28,21 +28,27 @@ c_variant_generator_script_depend_files = files(
 
 c_variant_generator_script_depends = []
 
-meson_wrapper_sh = find_program(meson.current_source_dir() / 'meson_helper' / 'meson_wrapper.sh')
+meson_wrapper_sh = find_program(
+    meson.current_source_dir() / 'meson_helper' / 'meson_wrapper.sh',
+)
 
 install_dependencies = custom_target(
     'install dependencies (c_variant_generator script)',
     command: [
         meson_wrapper_sh,
-        '--wrapper-generate', '@OUTPUT0@',
-        '--link-file', '@CURRENT_SOURCE_DIR@/pnpm-lock.yaml',
+        '--wrapper-generate',
+        '@OUTPUT0@',
+        '--link-file',
+        '@CURRENT_SOURCE_DIR@/pnpm-lock.yaml',
         '@OUTPUT1@',
         pnpm,
-        '--dir', meson.current_source_dir(),
+        '--dir',
+        meson.current_source_dir(),
         'exec',
         pnpm,
         'install',
-        '--loglevel', 'error',
+        '--loglevel',
+        'error',
     ],
     output: ['install_dependencies_date.txt', 'pnpm-lock-link.yaml'],
     build_subdir: 'generated' / 'pseudo',
@@ -54,12 +60,15 @@ type_check_helper_script = custom_target(
     'typecheck code (c_variant_generator script)',
     command: [
         meson_wrapper_sh,
-        '--wrapper-generate', '@OUTPUT@',
+        '--wrapper-generate',
+        '@OUTPUT@',
         pnpm,
-        '--dir', meson.current_source_dir(),
+        '--dir',
+        meson.current_source_dir(),
         'exec',
         'tsc',
-        '-p', 'tsconfig.json',
+        '-p',
+        'tsconfig.json',
     ],
     output: ['typecheck_code_date.txt'],
     build_subdir: 'generated' / 'pseudo',
@@ -72,9 +81,11 @@ lint_helper_script = custom_target(
     'lint code (c_variant_generator script)',
     command: [
         meson_wrapper_sh,
-        '--wrapper-generate', '@OUTPUT@',
+        '--wrapper-generate',
+        '@OUTPUT@',
         pnpm,
-        '--dir', meson.current_source_dir(),
+        '--dir',
+        meson.current_source_dir(),
         'run',
         'lint',
     ],
@@ -89,9 +100,11 @@ build_helper_script = custom_target(
     'build typescript code (c_variant_generator script)',
     command: [
         meson_wrapper_sh,
-        '--wrapper-generate', '@OUTPUT@',
+        '--wrapper-generate',
+        '@OUTPUT@',
         pnpm,
-        '--dir', meson.current_source_dir(),
+        '--dir',
+        meson.current_source_dir(),
         'run',
         'build',
     ],
@@ -106,7 +119,7 @@ c_variant_generator_script_depends += build_helper_script
 node = find_program(
     'node',
     required: false,
-    version: '>=24.0.0', # for .ts execution
+    version: '>=24.0.0',  # for .ts execution
 )
 
 deno = find_program(
@@ -147,7 +160,9 @@ c_variant_generator_exe = executable(
     files('meson_helper' / 'generate_wrapper.c'),
     c_variant_generator_exe_cfg,
     c_variant_generator_script_depends,
-
+    override_options: {
+        'b_coverage': false,
+    },
 )
 
 meson.override_find_program('c_variant_generator', c_variant_generator_exe)
