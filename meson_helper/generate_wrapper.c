@@ -20,7 +20,7 @@ int main(const int argc, char *const *const argv) {
     return 1;
   }
 
-  char **const array = malloc(sizeof(char *) * (argc + 2));
+  char **const array = (char**)malloc(sizeof(char *) * (argc + 2));
 
   if (array == NULL) {
     fprintf(stderr, "OOM\n");
@@ -30,10 +30,10 @@ int main(const int argc, char *const *const argv) {
   array[0] = NODE_PATH;
   array[1] = EXEC_DIR;
   for (size_t i = 1; i < (size_t)argc; ++i) {
-    array[1 + i] = argv[i];
+    array[i + 1] = argv[i];
   }
 
-  array[argc + 2] = NULL;
+  array[argc + 1] = NULL;
 
   execv(NODE_PATH, array);
 
