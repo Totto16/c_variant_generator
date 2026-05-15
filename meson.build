@@ -28,9 +28,7 @@ c_variant_generator_script_depend_files = files(
 
 c_variant_generator_script_depends = []
 
-meson_wrapper_sh = find_program(
-    meson.current_source_dir() / 'meson_helper' / 'meson_wrapper.sh',
-)
+meson_wrapper_sh = find_program(meson.current_source_dir() / 'meson_helper' / 'meson_wrapper.sh')
 
 install_dependencies = custom_target(
     'install dependencies (c_variant_generator script)',
@@ -147,6 +145,7 @@ endif
 c_variant_generator_exe_cfg_data = {
     'node': node_like_runtime.full_path(),
     'dir': meson.current_source_dir(),
+    'version': meson.project_version(),
 }
 
 c_variant_generator_exe_cfg = configure_file(
@@ -155,10 +154,20 @@ c_variant_generator_exe_cfg = configure_file(
     output: 'config.h',
 )
 
+git = find_program('git')
+
+vcs_dep = vcs_tag(
+    command: [git, 'describe', '--tags', '--always', '--abbrev=12'],
+    input: files('meson_helper' / 'git_version.h.in'),
+    output: 'git_version.h',
+    replace_string: '@GIT_COMMIT_HASH@',
+)
+
 c_variant_generator_exe = executable(
     'c_variant_generator_exe',
     files('meson_helper' / 'generate_wrapper.c'),
     c_variant_generator_exe_cfg,
+    vcs_dep,
     c_variant_generator_script_depends,
     override_options: {
         'b_coverage': false,

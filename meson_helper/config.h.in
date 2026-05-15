@@ -3,3 +3,5 @@
 #define NODE_PATH "@node@"
 
 #define EXEC_DIR "@dir@"
+
+#define SCRIPT_VERSION "@version@"

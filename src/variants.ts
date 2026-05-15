@@ -1113,7 +1113,12 @@ function validateTaggedUnion(union: TaggedUnion): void {
     }
 }
 
-export async function generateVariantCodeC(generatedVariantsFileH: string, inputDataPath: string): Promise<void> {
+export interface ScriptInfo {
+    commit: string,
+    version: string
+}
+
+export async function generateVariantCodeC(generatedVariantsFileH: string, inputDataPath: string, info: ScriptInfo): Promise<void> {
 
     const tasks: Promise<void>[] = []
 
@@ -1148,6 +1153,14 @@ export async function generateVariantCodeC(generatedVariantsFileH: string, input
 
     const headerData = `
 #pragma once
+
+/** Generated header
+* with: c_variant_generator
+* version: ${info.version}
+* commit:${info.commit}
+* date: ${(new Date()).toISOString()}
+* repo: https://github.com/Totto16/c_variant_generator
+**/
 
 ${await addGenerateMacros("variants")}
 
