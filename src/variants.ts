@@ -1160,6 +1160,8 @@ export async function generateVariantCodeC(generatedVariantsFileH: string, input
 * commit:${info.commit}
 * date: ${(new Date()).toISOString()}
 * repo: https://github.com/Totto16/c_variant_generator
+* lang: JS / TS
+* ABI: v1.0.0
 **/
 
 ${await addGenerateMacros("variants")}
