@@ -271,7 +271,10 @@ function generateUnnamedStruct(struct: TaggedTypeStruct, unnamedStructMap: Unnam
 }
 
 
-function generatePoisonPragma(names: string[]): string {
+function generatePoisonPragma(names: string[], topLevel: boolean): string {
+    if (topLevel) {
+        return `#pragma GCC poison ${names.join(" ")}`
+    }
     return `_Pragma ("GCC poison ${names.join(" ")}")`
 }
 
@@ -973,7 +976,7 @@ function generatedUnionForCHeader(taggedUnion: TaggedUnion, fileName: CaseName):
 	
 	${functionsString.split("\n").join("\n	")}
 	
-	${generatePoisonPragma([getStateFunctionName(taggedUnion.name)])}
+	${generatePoisonPragma([getStateFunctionName(taggedUnion.name)], false)}
 	${getVariantDeclarationMacro(true)}()`
 
     const generateMacroAll = `#define GENERATE_VARIANT_ALL_${taggedUnion.name.inner.MACRO_NAME()}()
@@ -1017,7 +1020,7 @@ function generatedUnionForCHeader(taggedUnion: TaggedUnion, fileName: CaseName):
 
 ${macros.map(a => a.split("\n").join(" \\\n")).join("\n\n")}
 
-${generatePoisonPragma(poisonedNames)
+${generatePoisonPragma(poisonedNames, true)
         }
 `)
 }
