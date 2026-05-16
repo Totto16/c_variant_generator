@@ -1,6 +1,7 @@
 
 #include "./generate.h"
 #include "./case_name.h"
+#include "./tagged_union.h"
 
 #include <fcntl.h>
 #include <sys/stat.h>
@@ -258,6 +259,27 @@ NODISCARD ExitCode generate_variants(tstr_static input, tstr_static output) {
 		tstr_free(&input_abs); \
 	} while(false)
 
+	TaggedUnionArray taggedUnions = TVEC_EMPTY(TaggedUnion);
+
+	tstr_static err = get_tagged_unions(&input_abs, &taggedUnions);
+
+	if(!tstr_static_is_null(err)) {
+		fprintf(stderr, "Error: can't get the TaggedUnions from the input file: " TSTR_FMT "\n",
+		        TSTR_STATIC_FMT_ARGS(err));
+		FREE_AT_END();
+		return ExitCodeFailure;
+	}
+
+#undef FREE_AT_END
+#define FREE_AT_END() \
+	do { \
+		free_tagged_union_array(&taggedUnions); \
+		case_name_free(file_name); \
+		free_string_builder(string_builder); \
+		tstr_free(&output_abs); \
+		tstr_free(&input_abs); \
+	} while(false)
+
 	// TODO HERE
 
 	tstr value = string_builder_release_into_tstr(&string_builder);
@@ -272,6 +294,7 @@ NODISCARD ExitCode generate_variants(tstr_static input, tstr_static output) {
 #define FREE_AT_END() \
 	do { \
 		tstr_free(&value); \
+		free_tagged_union_array(&taggedUnions); \
 		case_name_free(file_name); \
 		free_string_builder(string_builder); \
 		tstr_free(&output_abs); \

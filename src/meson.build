@@ -6,6 +6,8 @@ src_files += files(
     'json.c',
     'json.h',
     'main.c',
+    'tagged_union.c',
+    'tagged_union.h',
     'utils.h',
 )
 
