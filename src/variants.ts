@@ -1332,9 +1332,5 @@ ${getCppFeatures(taggedUnions, fileName)}
 /* NOLINTEND(${clangTidyGlobalIgnores.join(",")}) */
 `
 
-    tasks.push(writeFileAndDirs(generatedVariantsFileH, headerData))
-
-    await Promise.all(tasks)
-
 
 }
