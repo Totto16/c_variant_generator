@@ -1,4 +1,6 @@
 src_files += files(
+    'case_name.c',
+    'case_name.h',
     'generate.c',
     'generate.h',
     'json.c',
