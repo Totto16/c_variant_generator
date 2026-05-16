@@ -52,7 +52,10 @@ install_dependencies = custom_target(
     build_subdir: 'generated' / 'pseudo',
     depend_files: ['package.json'],
 )
-c_variant_generator_script_depends += install_dependencies
+
+c_variant_generator_script_depends += install_dependencies[0]
+
+c_variant_generator_script_depends += install_dependencies[1]
 
 type_check_helper_script = custom_target(
     'typecheck code (c_variant_generator script)',
@@ -172,6 +175,8 @@ c_variant_generator_exe = executable(
     override_options: {
         'b_coverage': false,
     },
+    link_depends: [c_variant_generator_script_depends],
+    extra_files: [c_variant_generator_script_depend_files]
 )
 
 meson.override_find_program('c_variant_generator', c_variant_generator_exe)
