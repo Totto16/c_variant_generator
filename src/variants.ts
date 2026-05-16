@@ -1020,6 +1020,8 @@ function generatedUnionForCHeader(taggedUnion: TaggedUnion, fileName: CaseName):
 
 ${macros.map(a => a.split("\n").join(" \\\n")).join("\n\n")}
 
+//TODO: maybe use different identifier names for implementations, so that this doesn't trigger a poisoned identifier error: see 
+// https://github.com/Totto16/trc/commit/07901470b42f00e415f15d9985b524d2a5aa3b00
 ${generatePoisonPragma(poisonedNames, true)
         }
 `)
