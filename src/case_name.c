@@ -124,14 +124,65 @@ NODISCARD CaseName* case_name_from_parts(TstrArray* array) {
 	return case_name_from_sanitized_parts(array);
 }
 
-NODISCARD CaseName* case_name_from_PascalCase(const tstr* snake_case) {
-	// TODO
-}
-
 NODISCARD static bool is_utf8_string(const tstr* str) {
 	// TODO:
 	(void)str;
 	return false;
+}
+
+NODISCARD CaseName* case_name_from_PascalCase(const tstr* snake_case) {
+	if(!is_utf8_string(snake_case)) {
+		// TODO:`Unicode strings not yet supported: ${str}`)
+		return NULL;
+	}
+
+	TstrArray array = TVEC_EMPTY(tstr);
+
+	tstr_view current = { .data = tstr_cstr(snake_case), .len = 0 };
+
+	for(size_t i = 0; i < tstr_len(snake_case); ++i) {
+		char ch = tstr_cstr(snake_case)[i];
+
+		if(current.len == 0) {
+			if(!isupper(ch)) {
+				free_tstr_array(&array);
+				return NULL;
+			}
+
+			current.len += 1;
+
+		} else {
+
+			if(isupper(ch)) {
+				if(current.len <= 1) {
+					free_tstr_array(&array);
+					return NULL;
+				}
+
+				tstr allocated = tstr_from_view(current);
+
+				assert(tstr_len(&allocated) > 1);
+
+				tstr_data(&allocated)[0] = tolower(tstr_data(&allocated)[0]);
+
+				TvecResult push_res = TVEC_PUSH(tstr, &array, allocated);
+
+				if(push_res != TvecResultOk) {
+					tstr_free(&allocated);
+					free_tstr_array(&array);
+					return NULL;
+				}
+
+				current.data = current.data + current.len;
+				current.len = 0;
+
+			} else {
+				current.len += 1;
+			}
+		}
+	}
+
+	return case_name_from_sanitized_parts(&array);
 }
 
 NODISCARD CaseName* case_name_from_snake_case(const tstr* snake_case) {
@@ -176,7 +227,7 @@ NODISCARD CaseName* case_name_from_snake_case(const tstr* snake_case) {
 		}
 	}
 
-    return case_name_from_sanitized_parts(&array);
+	return case_name_from_sanitized_parts(&array);
 }
 
 NODISCARD CaseName* case_name_combine(const CaseName* one, const CaseName* two) {
