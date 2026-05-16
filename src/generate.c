@@ -8,17 +8,44 @@
 #include <cwalk.h>
 #include <tstr_builder.h>
 
-NODISCARD static tstr_view cwk_wrapper_get_ext(tstr_static value) {
+NODISCARD static tstr_view cwk_wrapper_get_ext(const tstr* value) {
 
 	const char* ext = NULL;
 	size_t len = 0;
-	bool result = cwk_path_get_extension(value.ptr, &ext, &len);
+	bool result = cwk_path_get_extension(tstr_cstr(value), &ext, &len);
 
 	if(!result) {
 		return TSTR_EMPTY_VIEW;
 	}
 
 	return (tstr_view){ .data = ext, .len = len };
+}
+
+NODISCARD static tstr cwk_wrapper_make_absolute(tstr_static path) {
+
+	if(cwk_path_is_absolute(path.ptr)) {
+		return tstr_from_static_tstr(path);
+	}
+
+	char cwd_buffer[FILENAME_MAX];
+
+	char* cwd = getcwd(cwd_buffer, sizeof(cwd_buffer) / sizeof(*cwd_buffer));
+
+	if(cwd == NULL) {
+		return tstr_null();
+	}
+
+	char buffer[FILENAME_MAX];
+
+	const size_t buffer_size = sizeof(buffer) / sizeof(*buffer);
+
+	const size_t path_size = cwk_path_get_absolute(cwd, path.ptr, buffer, sizeof(buffer));
+
+	if(path_size >= buffer_size) {
+		return tstr_null();
+	}
+
+	return tstr_from_view((tstr_view){ .data = buffer, .len = path_size });
 }
 
 NODISCARD static int make_dir_recursive(char* dir) {
@@ -58,7 +85,7 @@ NODISCARD static bool write_file_helper(tstr_static file, const tstr* value) {
 
 		tstr_view dirname = { .data = file.ptr, .len = dirname_length };
 
-		if(dirname_length > file.len) {
+		if(dirname.len > file.len) {
 			return false;
 		}
 
@@ -121,35 +148,72 @@ NODISCARD ExitCode generate_variants(tstr_static input, tstr_static output) {
 		return ExitCodeFailure;
 	}
 
-	if(!cwk_path_is_absolute(input.ptr)) {
-		fprintf(stderr, "Input file path is not absolute: " TSTR_FMT "\n",
+#define FREE_AT_END() \
+	do { \
+	} while(false)
+
+	tstr input_abs = cwk_wrapper_make_absolute(input);
+
+	if(tstr_is_null(&input_abs)) {
+		fprintf(stderr, "Input file path can't be made absolute: " TSTR_FMT "\n",
 		        TSTR_STATIC_FMT_ARGS(input));
+		FREE_AT_END();
 		return ExitCodeFailure;
 	}
 
-	if(!cwk_path_is_absolute(output.ptr)) {
-		fprintf(stderr, "Output file path is not absolute: " TSTR_FMT "\n",
-		        TSTR_STATIC_FMT_ARGS(input));
+#undef FREE_AT_END
+#define FREE_AT_END() \
+	do { \
+		tstr_free(&input_abs); \
+	} while(false)
+
+	tstr output_abs = cwk_wrapper_make_absolute(output);
+
+	if(tstr_is_null(&output_abs)) {
+		fprintf(stderr, "Output file path can't be made absolute: " TSTR_FMT "\n",
+		        TSTR_STATIC_FMT_ARGS(output));
+		FREE_AT_END();
 		return ExitCodeFailure;
 	}
 
-	const tstr_view output_extension = cwk_wrapper_get_ext(output);
+#undef FREE_AT_END
+#define FREE_AT_END() \
+	do { \
+		tstr_free(&output_abs); \
+		tstr_free(&input_abs); \
+	} while(false)
+
+	const tstr_view input_extension = cwk_wrapper_get_ext(&input_abs);
+
+	if(!tstr_view_eq_view(input_extension, TSTR_TSV(".json"))) {
+		fprintf(stderr, "Input file has not a .json extension:" TSTR_FMT "\n",
+		        TSV_FMT_ARGS(input_extension));
+		FREE_AT_END();
+		return ExitCodeFailure;
+	}
+
+	const tstr_view output_extension = cwk_wrapper_get_ext(&output_abs);
 
 	if(!tstr_view_eq_view(output_extension, TSTR_TSV(".h"))) {
 		fprintf(stderr, "Output file has not a .h extension:" TSTR_FMT "\n",
 		        TSV_FMT_ARGS(output_extension));
+		FREE_AT_END();
 		return ExitCodeFailure;
 	}
 
 	StringBuilder* string_builder = string_builder_init();
 
 	if(string_builder == NULL) {
+		FREE_AT_END();
 		return ExitCodeFailure;
 	}
 
+#undef FREE_AT_END
 #define FREE_AT_END() \
 	do { \
 		free_string_builder(string_builder); \
+		tstr_free(&output_abs); \
+		tstr_free(&input_abs); \
 	} while(false)
 
 	// TODO HERE
@@ -157,8 +221,8 @@ NODISCARD ExitCode generate_variants(tstr_static input, tstr_static output) {
 	tstr value = string_builder_release_into_tstr(&string_builder);
 
 	if(tstr_is_null(&value)) {
-		FREE_AT_END();
 		fprintf(stderr, "Error: couldn't get string from string builder\n");
+		FREE_AT_END();
 		return ExitCodeFailure;
 	}
 
@@ -167,14 +231,16 @@ NODISCARD ExitCode generate_variants(tstr_static input, tstr_static output) {
 	do { \
 		tstr_free(&value); \
 		free_string_builder(string_builder); \
+		tstr_free(&output_abs); \
+		tstr_free(&input_abs); \
 	} while(false)
 
 	bool write_result = write_file_helper(output, &value);
 
 	if(!write_result) {
-		FREE_AT_END();
 		fprintf(stderr, "Error: couldn't write to file: " TSTR_FMT "\n",
 		        TSTR_STATIC_FMT_ARGS(input));
+		FREE_AT_END();
 		return ExitCodeFailure;
 	}
 

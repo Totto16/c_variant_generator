@@ -176,20 +176,6 @@ export async function fsAsyncExists(file: string): Promise<boolean> {
     }
 }
 
-export async function writeFileAndDirs(file: string, content: string): Promise<void> {
-
-    const dir = path.dirname(file)
-
-    if (!await fsAsyncExists(dir)) {
-        await fsAsync.mkdir(dir, { recursive: true })
-    }
-
-    await fsAsync.writeFile(file, content)
-
-}
-
-
-
 
 export function isUTF8String(text: string): boolean {
 
