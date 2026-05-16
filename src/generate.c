@@ -216,6 +216,8 @@ NODISCARD ExitCode generate_variants(tstr_static input, tstr_static output) {
 		tstr_free(&input_abs); \
 	} while(false)
 
+	CaseName file_name = get_file_name_as_case_name(output_abs);
+
 	// TODO HERE
 
 	tstr value = string_builder_release_into_tstr(&string_builder);
