@@ -6,4 +6,4 @@
 
 #include <tjson_schema.h>
 
-NODISCARD JsonSchema get_json_schema(void);
+NODISCARD JsonSchema get_json_schema_for_input(void);

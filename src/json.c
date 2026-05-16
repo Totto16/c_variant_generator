@@ -2,7 +2,7 @@
 
 #include <tjson_schema.h>
 
-NODISCARD JsonSchema get_json_schema(void) {
+NODISCARD JsonSchema get_json_schema_for_input(void) {
 
 	JsonSchemaString* ParsedNamePascalCaseZ = json_schema_string_get();
 	tstr_static add_result = json_schema_string_set_nonempty(ParsedNamePascalCaseZ);
