@@ -4,4 +4,6 @@
 
 #include <tjson.h>
 
-NODISCARD tstr generate_json_schema(void);
+#include <tjson_schema.h>
+
+NODISCARD JsonSchema get_json_schema(void);

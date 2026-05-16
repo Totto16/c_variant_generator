@@ -10,11 +10,11 @@ TVEC_DEFINE_VEC_TYPE(tstr)
 
 typedef TVEC_TYPENAME(tstr) TstrArray;
 
-NODISCARD CaseName* case_name_from_parts(TstrArray* array);
+NODISCARD CaseName* case_name_from_parts(TstrArray* array, tstr_static* err);
 
-NODISCARD CaseName* case_name_from_PascalCase(const tstr* snake_case);
+NODISCARD CaseName* case_name_from_PascalCase(const tstr* snake_case, tstr_static* err);
 
-NODISCARD CaseName* case_name_from_snake_case(const tstr* snake_case);
+NODISCARD CaseName* case_name_from_snake_case(const tstr* snake_case, tstr_static* err);
 
 NODISCARD CaseName* case_name_combine(const CaseName* one, const CaseName* two);
 

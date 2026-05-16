@@ -2,7 +2,6 @@
 
 TVEC_IMPLEMENT_VEC_TYPE(tstr)
 
-
 struct CaseNameImpl {
 	// NOTE. JS uses a array of the parts, normalized, but than it needed to allocate on every call
 	// to getter functions, so we store all needed variants inline and the getter functions just
@@ -109,7 +108,7 @@ NODISCARD static CaseName* case_name_from_sanitized_parts(TstrArray* array) {
 	return get_case_name_impl(PascalCase, MACRO_NAME, snake_case);
 }
 
-NODISCARD CaseName* case_name_from_parts(TstrArray* array) {
+NODISCARD CaseName* case_name_from_parts(TstrArray* array, tstr_static* const err) {
 
 	for(size_t i = 0; i < TVEC_LENGTH(tstr, *array); ++i) {
 		const tstr value = TVEC_AT(tstr, *array, i);
@@ -119,6 +118,13 @@ NODISCARD CaseName* case_name_from_parts(TstrArray* array) {
 
 			if(!isascii(ch)) {
 				free_tstr_array(array);
+				*err = TSTR_STATIC_LIT("not an ascii char");
+				return NULL;
+			}
+
+			if(!islower(ch)) {
+				free_tstr_array(array);
+				*err = TSTR_STATIC_LIT("not a lower char");
 				return NULL;
 			}
 		}
@@ -133,9 +139,9 @@ NODISCARD static bool is_utf8_string(const tstr* str) {
 	return false;
 }
 
-NODISCARD CaseName* case_name_from_PascalCase(const tstr* snake_case) {
-	if(!is_utf8_string(snake_case)) {
-		// TODO:`Unicode strings not yet supported: ${str}`)
+NODISCARD CaseName* case_name_from_PascalCase(const tstr* snake_case, tstr_static* const err) {
+	if(is_utf8_string(snake_case)) {
+		*err = TSTR_STATIC_LIT("Unicode strings not yet supported");
 		return NULL;
 	}
 
@@ -149,6 +155,7 @@ NODISCARD CaseName* case_name_from_PascalCase(const tstr* snake_case) {
 		if(current.len == 0) {
 			if(!isupper(ch)) {
 				free_tstr_array(&array);
+				*err = TSTR_STATIC_LIT("first char in pascal case part not uppercase");
 				return NULL;
 			}
 
@@ -159,6 +166,7 @@ NODISCARD CaseName* case_name_from_PascalCase(const tstr* snake_case) {
 			if(isupper(ch)) {
 				if(current.len <= 1) {
 					free_tstr_array(&array);
+					*err = TSTR_STATIC_LIT("two consecutive uppercase chars in pascal case part");
 					return NULL;
 				}
 
@@ -173,6 +181,7 @@ NODISCARD CaseName* case_name_from_PascalCase(const tstr* snake_case) {
 				if(push_res != TvecResultOk) {
 					tstr_free(&allocated);
 					free_tstr_array(&array);
+					*err = TSTR_STATIC_LIT("array push OOM");
 					return NULL;
 				}
 
@@ -188,10 +197,10 @@ NODISCARD CaseName* case_name_from_PascalCase(const tstr* snake_case) {
 	return case_name_from_sanitized_parts(&array);
 }
 
-NODISCARD CaseName* case_name_from_snake_case(const tstr* snake_case) {
+NODISCARD CaseName* case_name_from_snake_case(const tstr* snake_case, tstr_static* const err) {
 
-	if(!is_utf8_string(snake_case)) {
-		// TODO:`Unicode strings not yet supported: ${str}`)
+	if(is_utf8_string(snake_case)) {
+		*err = TSTR_STATIC_LIT("Unicode strings not yet supported");
 		return NULL;
 	}
 
@@ -207,6 +216,7 @@ NODISCARD CaseName* case_name_from_snake_case(const tstr* snake_case) {
 
 		if(!successfull) {
 			free_tstr_array(&array);
+			*err = TSTR_STATIC_LIT("string spit error");
 			return NULL;
 		}
 
@@ -215,6 +225,7 @@ NODISCARD CaseName* case_name_from_snake_case(const tstr* snake_case) {
 
 			if(!islower(ch)) {
 				free_tstr_array(&array);
+				*err = TSTR_STATIC_LIT("snake case char is not lowercase");
 				return NULL;
 			}
 		}
@@ -226,6 +237,7 @@ NODISCARD CaseName* case_name_from_snake_case(const tstr* snake_case) {
 		if(push_res != TvecResultOk) {
 			tstr_free(&allocated);
 			free_tstr_array(&array);
+			*err = TSTR_STATIC_LIT("array push OOM");
 			return NULL;
 		}
 	}
@@ -385,4 +397,6 @@ void case_name_free(CaseName* name) {
 	tstr_free(&(name->PascalCase));
 	tstr_free(&(name->MACRO_NAME));
 	tstr_free(&(name->snake_case));
+
+	free(name);
 }

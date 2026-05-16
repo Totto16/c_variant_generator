@@ -143,7 +143,7 @@ NODISCARD static bool write_file_helper(tstr_static file, const tstr* value) {
 	return (close_result == 0);
 }
 
-NODISCARD static CaseName* get_file_name_as_case_name(const tstr* file) {
+NODISCARD static CaseName* get_file_name_as_case_name(const tstr* file, tstr_static* const err) {
 
 	const char* basename_ptr = NULL;
 	size_t length = 0;
@@ -151,6 +151,7 @@ NODISCARD static CaseName* get_file_name_as_case_name(const tstr* file) {
 	cwk_path_get_basename(tstr_cstr(file), &basename_ptr, &length);
 
 	if(basename_ptr == NULL || length == 0) {
+		*err = TSTR_STATIC_LIT("couldn't get basename");
 		return NULL;
 	}
 
@@ -164,7 +165,7 @@ NODISCARD static CaseName* get_file_name_as_case_name(const tstr* file) {
 
 	const tstr name_tstr = tstr_from_static_tstr(name);
 
-	return case_name_from_snake_case(&name_tstr);
+	return case_name_from_snake_case(&name_tstr, err);
 }
 
 NODISCARD ExitCode generate_variants(tstr_static input, tstr_static output) {
@@ -242,10 +243,13 @@ NODISCARD ExitCode generate_variants(tstr_static input, tstr_static output) {
 		tstr_free(&input_abs); \
 	} while(false)
 
-	CaseName* file_name = get_file_name_as_case_name(&output_abs);
+	tstr_static err = TSTR_STATIC_LIT("<Unknown error>");
+
+	CaseName* file_name = get_file_name_as_case_name(&output_abs, &err);
 
 	if(file_name == NULL) {
-		fprintf(stderr, "Error: can't get the CaseName for the filename\n");
+		fprintf(stderr, "Error: Can't get the CaseName for the filename: " TSTR_FMT "\n",
+		        TSTR_STATIC_FMT_ARGS(err));
 		FREE_AT_END();
 		return ExitCodeFailure;
 	}
@@ -261,11 +265,11 @@ NODISCARD ExitCode generate_variants(tstr_static input, tstr_static output) {
 
 	TaggedUnionArray taggedUnions = TVEC_EMPTY(TaggedUnion);
 
-	tstr_static err = get_tagged_unions(&input_abs, &taggedUnions);
+	tstr_static err2 = get_tagged_unions(&input_abs, &taggedUnions);
 
-	if(!tstr_static_is_null(err)) {
-		fprintf(stderr, "Error: can't get the TaggedUnions from the input file: " TSTR_FMT "\n",
-		        TSTR_STATIC_FMT_ARGS(err));
+	if(!tstr_static_is_null(err2)) {
+		fprintf(stderr, "Error: Can't get the TaggedUnions from the input file: " TSTR_FMT "\n",
+		        TSTR_STATIC_FMT_ARGS(err2));
 		FREE_AT_END();
 		return ExitCodeFailure;
 	}
