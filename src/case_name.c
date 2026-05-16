@@ -1,5 +1,8 @@
 #include "./case_name.h"
 
+TVEC_IMPLEMENT_VEC_TYPE(tstr)
+
+
 struct CaseNameImpl {
 	// NOTE. JS uses a array of the parts, normalized, but than it needed to allocate on every call
 	// to getter functions, so we store all needed variants inline and the getter functions just

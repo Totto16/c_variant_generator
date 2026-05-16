@@ -1,5 +1,6 @@
 
 #include "./generate.h"
+#include "./case_name.h"
 
 #include <fcntl.h>
 #include <sys/stat.h>
@@ -141,6 +142,30 @@ NODISCARD static bool write_file_helper(tstr_static file, const tstr* value) {
 	return (close_result == 0);
 }
 
+NODISCARD static CaseName* get_file_name_as_case_name(const tstr* file) {
+
+	const char* basename_ptr = NULL;
+	size_t length = 0;
+
+	cwk_path_get_basename(tstr_cstr(file), &basename_ptr, &length);
+
+	if(basename_ptr == NULL || length == 0) {
+		return NULL;
+	}
+
+	const tstr_static basename = { .ptr = basename_ptr, .len = length };
+
+	const tstr basename_tstr = tstr_from_static_tstr(basename);
+
+	tstr_view ext = cwk_wrapper_get_ext(&basename_tstr);
+
+	const tstr_static name = { .ptr = basename_ptr, .len = length - ext.len };
+
+	const tstr name_tstr = tstr_from_static_tstr(name);
+
+	return case_name_from_snake_case(&name_tstr);
+}
+
 NODISCARD ExitCode generate_variants(tstr_static input, tstr_static output) {
 
 	if(input.ptr == NULL || output.ptr == NULL) {
@@ -216,7 +241,22 @@ NODISCARD ExitCode generate_variants(tstr_static input, tstr_static output) {
 		tstr_free(&input_abs); \
 	} while(false)
 
-	CaseName file_name = get_file_name_as_case_name(output_abs);
+	CaseName* file_name = get_file_name_as_case_name(&output_abs);
+
+	if(file_name == NULL) {
+		fprintf(stderr, "Error: can't get the CaseName for the filename\n");
+		FREE_AT_END();
+		return ExitCodeFailure;
+	}
+
+#undef FREE_AT_END
+#define FREE_AT_END() \
+	do { \
+		case_name_free(file_name); \
+		free_string_builder(string_builder); \
+		tstr_free(&output_abs); \
+		tstr_free(&input_abs); \
+	} while(false)
 
 	// TODO HERE
 
@@ -232,6 +272,7 @@ NODISCARD ExitCode generate_variants(tstr_static input, tstr_static output) {
 #define FREE_AT_END() \
 	do { \
 		tstr_free(&value); \
+		case_name_free(file_name); \
 		free_string_builder(string_builder); \
 		tstr_free(&output_abs); \
 		tstr_free(&input_abs); \
