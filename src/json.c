@@ -2,7 +2,7 @@
 
 #include <tjson_schema.h>
 
-NODISCARD static JsonSchema get_json_schema(void) {
+NODISCARD JsonSchema get_json_schema(void) {
 
 	JsonSchemaString* ParsedNamePascalCaseZ = json_schema_string_get();
 	tstr_static add_result = json_schema_string_set_nonempty(ParsedNamePascalCaseZ);
@@ -337,19 +337,4 @@ NODISCARD static JsonSchema get_json_schema(void) {
 	assert(tstr_static_is_null(add_result));
 
 	return new_json_schema_array_rc(ParsedTaggedUnionFullSchemaZ);
-}
-
-NODISCARD tstr generate_json_schema(void) {
-
-	JsonSchema schema = get_json_schema();
-
-	const tstr result = json_schema_to_string(&schema);
-
-	free_json_schema(&schema);
-
-	if(tstr_is_null(&result)) {
-		return tstr_null();
-	}
-
-	return result;
 }

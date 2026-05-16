@@ -98,7 +98,20 @@ static void assert_fn(const char* const expr, bool value) {
 #define PROGRAM_ARGS_AT(args, index) \
 	(ASSERT_EXPR((index) < (args).size), tstr_static_from_static_cstr((args).data[(index)]))
 
-void make_expr(void);
+NODISCARD static tstr generate_json_schema(void) {
+
+	JsonSchema schema = get_json_schema();
+
+	const tstr result = json_schema_to_string(&schema);
+
+	free_json_schema(&schema);
+
+	if(tstr_is_null(&result)) {
+		return tstr_null();
+	}
+
+	return result;
+}
 
 static ExitCode rich_main(const ProgramArgs args) {
 	if(args.size < 1) {
