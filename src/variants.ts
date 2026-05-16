@@ -1223,7 +1223,7 @@ export async function generateVariantCodeC(generatedVariantsFileH: string, input
 /** Generated header
 * with: c_variant_generator
 * version: ${info.version}
-* commit:${info.commit}
+* commit: ${info.commit}
 * date: ${(new Date()).toISOString()}
 * repo: https://github.com/Totto16/c_variant_generator
 * lang: JS / TS
