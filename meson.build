@@ -138,14 +138,7 @@ inc_dirs = []
 
 subdir('src')
 
-git = find_program('git')
 
-vcs_dep = vcs_tag(
-    command: [git, 'describe', '--tags', '--always', '--abbrev=12'],
-    input: files('meson_helper' / 'git_version.h.in'),
-    output: 'git_version.h',
-    replace_string: '@GIT_COMMIT_HASH@',
-)
 
 # NOTE: this is a recursive dependency, as tjson depends on this generator
 
@@ -177,7 +170,6 @@ internal_c_args += '-DTJSON_ALLOW_BOOTSTRAP=1'
 c_variant_generator_exe = executable(
     'c_variant_generator_exe',
     src_files,
-    vcs_dep,
     dependencies: deps,
     include_directories: inc_dirs,
     c_args: [compile_flags, internal_c_args],

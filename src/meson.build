@@ -15,3 +15,14 @@ if stdc_version_int >= 202000
     compile_flags += '-D_C_VARIANT_GENERATOR_COMPILE_WITH_NARROWED_ENUMS'
 endif
 
+
+git = find_program('git')
+
+vcs_dep = vcs_tag(
+    command: [git, 'describe', '--tags', '--always', '--abbrev=12'],
+    input: files('git_version.h.in'),
+    output: 'git_version.h',
+    replace_string: '@GIT_COMMIT_HASH@',
+)
+
+src_files += vcs_dep

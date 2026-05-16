@@ -1180,10 +1180,6 @@ function validateTaggedUnion(union: TaggedUnion): void {
     }
 }
 
-export interface ScriptInfo {
-    commit: string,
-    version: string
-}
 
 export async function generateVariantCodeC(generatedVariantsFileH: string, inputDataPath: string, info: ScriptInfo): Promise<void> {
 
