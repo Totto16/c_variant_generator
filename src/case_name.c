@@ -103,7 +103,7 @@ NODISCARD static CaseName* case_name_from_sanitized_parts(TstrArray* array) {
 	}
 
 	free_tstr_array(array);
-	return NULL;
+	return get_case_name_impl(PascalCase, MACRO_NAME, snake_case);
 }
 
 NODISCARD CaseName* case_name_from_parts(TstrArray* array) {
@@ -133,25 +133,155 @@ NODISCARD CaseName* case_name_from_snake_case(const tstr* snake_case) {
 }
 
 NODISCARD CaseName* case_name_combine(const CaseName* one, const CaseName* two) {
-	// TODO
+
+	tstr PascalCase = tstr_init();
+	tstr MACRO_NAME = tstr_init();
+	tstr snake_case = tstr_init();
+
+#define FREE_AT_END() \
+	do { \
+		tstr_free(&PascalCase); \
+		tstr_free(&MACRO_NAME); \
+		tstr_free(&snake_case); \
+	} while(false)
+
+	{ // PascalCase
+		TStrResult cat_result =
+		    tstr_cat_len(&PascalCase, tstr_cstr(&(one->PascalCase)), tstr_len(&(one->PascalCase)));
+
+		if(cat_result != TStrResultOk) {
+			FREE_AT_END();
+			return NULL;
+		}
+
+		cat_result =
+		    tstr_cat_len(&PascalCase, tstr_cstr(&(two->PascalCase)), tstr_len(&(two->PascalCase)));
+
+		if(cat_result != TStrResultOk) {
+			FREE_AT_END();
+			return NULL;
+		}
+	}
+
+	{ // MACRO_NAME
+		TStrResult cat_result =
+		    tstr_cat_len(&MACRO_NAME, tstr_cstr(&(one->MACRO_NAME)), tstr_len(&(one->MACRO_NAME)));
+
+		if(cat_result != TStrResultOk) {
+			FREE_AT_END();
+			return NULL;
+		}
+
+		if(tstr_len(&MACRO_NAME) > 0) {
+			cat_result = tstr_push_char(&MACRO_NAME, '_');
+
+			if(cat_result != TStrResultOk) {
+				FREE_AT_END();
+				return NULL;
+			}
+		}
+
+		cat_result =
+		    tstr_cat_len(&MACRO_NAME, tstr_cstr(&(two->MACRO_NAME)), tstr_len(&(two->MACRO_NAME)));
+
+		if(cat_result != TStrResultOk) {
+			FREE_AT_END();
+			return NULL;
+		}
+	}
+
+	{ // snake_case
+		TStrResult cat_result =
+		    tstr_cat_len(&snake_case, tstr_cstr(&(one->snake_case)), tstr_len(&(one->snake_case)));
+
+		if(cat_result != TStrResultOk) {
+			FREE_AT_END();
+			return NULL;
+		}
+
+		if(tstr_len(&snake_case) > 0) {
+			cat_result = tstr_push_char(&snake_case, '_');
+
+			if(cat_result != TStrResultOk) {
+				FREE_AT_END();
+				return NULL;
+			}
+		}
+
+		cat_result =
+		    tstr_cat_len(&snake_case, tstr_cstr(&(two->snake_case)), tstr_len(&(two->snake_case)));
+
+		if(cat_result != TStrResultOk) {
+			FREE_AT_END();
+			return NULL;
+		}
+	}
+
+	return get_case_name_impl(PascalCase, MACRO_NAME, snake_case);
 }
 
+#undef FREE_AT_END
+
 NODISCARD bool case_name_eq(const CaseName* one, const CaseName* two) {
-	// TODO
+	if(!tstr_eq(&(one->PascalCase), &(two->PascalCase))) {
+		return false;
+	}
+
+	if(!tstr_eq(&(one->MACRO_NAME), &(two->MACRO_NAME))) {
+		return false;
+	}
+
+	return tstr_eq(&(one->snake_case), &(two->snake_case));
 }
 
 NODISCARD const tstr* case_name_get_PascalCase(const CaseName* name) {
-	// TODO
+	if(name == NULL) {
+		return NULL;
+	}
+
+	const tstr* result = &(name->PascalCase);
+
+	if(tstr_is_null(result)) {
+		return NULL;
+	}
+
+	return result;
 }
 
-NODISCARD const tstr* case_name_get_MACOR_NAME(const CaseName* name) {
-	// TODO
+NODISCARD const tstr* case_name_get_MACRO_NAME(const CaseName* name) {
+	if(name == NULL) {
+		return NULL;
+	}
+
+	const tstr* result = &(name->MACRO_NAME);
+
+	if(tstr_is_null(result)) {
+		return NULL;
+	}
+
+	return result;
 }
 
 NODISCARD const tstr* case_name_get_snake_case(const CaseName* name) {
-	// TODO
+	if(name == NULL) {
+		return NULL;
+	}
+
+	const tstr* result = &(name->snake_case);
+
+	if(tstr_is_null(result)) {
+		return NULL;
+	}
+
+	return result;
 }
 
 void case_name_free(CaseName* name) {
-	// TODO
+	if(name == NULL) {
+		return;
+	}
+
+	tstr_free(&(name->PascalCase));
+	tstr_free(&(name->MACRO_NAME));
+	tstr_free(&(name->snake_case));
 }

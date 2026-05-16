@@ -22,7 +22,7 @@ NODISCARD bool case_name_eq(const CaseName* one, const CaseName* two);
 
 NODISCARD const tstr* case_name_get_PascalCase(const CaseName* name);
 
-NODISCARD const tstr* case_name_get_MACOR_NAME(const CaseName* name);
+NODISCARD const tstr* case_name_get_MACRO_NAME(const CaseName* name);
 
 NODISCARD const tstr* case_name_get_snake_case(const CaseName* name);
 
