@@ -1151,6 +1151,14 @@ export async function generateVariantCodeC(generatedVariantsFileH: string, input
 
     const nameForCompoundLiteralIgnoreMacro = "__INTERNALS_IGNORE_C_COMPOUND_LITERALS_ERROR_IN_CPP"
 
+    const clangTidyGlobalIgnores: string[] = [
+        "readability-identifier-naming",
+        "bugprone-reserved-identifier",
+        "cert-dcl37-c",
+        "cert-dcl51-cpp",
+        "bugprone-macro-parentheses",
+    ]
+
     const headerData = `
 #pragma once
 
@@ -1163,6 +1171,8 @@ export async function generateVariantCodeC(generatedVariantsFileH: string, input
 * lang: JS / TS
 * ABI: v1.0.0
 **/
+
+/* NOLINTBEGIN(${clangTidyGlobalIgnores.join(",")}) */
 
 ${await addGenerateMacros("variants")}
 
@@ -1266,6 +1276,8 @@ ${taggedUnions.map(un => generatedUnionForCHeader(un, fileName)).join("\n\n")}
 #ifdef __cplusplus
 ${getCppFeatures(taggedUnions, fileName)}
 #endif
+
+/* NOLINTEND(${clangTidyGlobalIgnores.join(",")}) */
 `
 
     tasks.push(writeFileAndDirs(generatedVariantsFileH, headerData))
