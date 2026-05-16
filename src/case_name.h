@@ -1,12 +1,16 @@
 #pragma once
 
-#include <tstr.h>
-
 #include "./utils.h"
+#include <tstr.h>
+#include <tvec.h>
 
 typedef struct CaseNameImpl CaseName;
 
-NODISCARD CaseName* case_name_from_parts(const tstr_static**** ARRAY_TODO);
+TVEC_DEFINE_VEC_TYPE(tstr)
+
+typedef TVEC_TYPENAME(tstr) TstrArray;
+
+NODISCARD CaseName* case_name_from_parts(TstrArray* array);
 
 NODISCARD CaseName* case_name_from_PascalCase(const tstr* snake_case);
 
