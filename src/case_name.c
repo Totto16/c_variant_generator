@@ -128,8 +128,55 @@ NODISCARD CaseName* case_name_from_PascalCase(const tstr* snake_case) {
 	// TODO
 }
 
+NODISCARD static bool is_utf8_string(const tstr* str) {
+	// TODO:
+	(void)str;
+	return false;
+}
+
 NODISCARD CaseName* case_name_from_snake_case(const tstr* snake_case) {
-	// TODO
+
+	if(!is_utf8_string(snake_case)) {
+		// TODO:`Unicode strings not yet supported: ${str}`)
+		return NULL;
+	}
+
+	TstrArray array = TVEC_EMPTY(tstr);
+
+	tstr_split_iter iter = tstr_split_init(tstr_as_view(snake_case), "_");
+
+	while(!iter.finished) {
+
+		tstr_view out = TSTR_EMPTY_VIEW;
+
+		bool successfull = tstr_split_next(&iter, &out);
+
+		if(!successfull) {
+			free_tstr_array(&array);
+			return NULL;
+		}
+
+		for(size_t i = 0; i < out.len; ++i) {
+			char ch = out.data[i];
+
+			if(!islower(ch)) {
+				free_tstr_array(&array);
+				return NULL;
+			}
+		}
+
+		tstr allocated = tstr_from_view(out);
+
+		TvecResult push_res = TVEC_PUSH(tstr, &array, allocated);
+
+		if(push_res != TvecResultOk) {
+			tstr_free(&allocated);
+			free_tstr_array(&array);
+			return NULL;
+		}
+	}
+
+    return case_name_from_sanitized_parts(&array);
 }
 
 NODISCARD CaseName* case_name_combine(const CaseName* one, const CaseName* two) {
