@@ -1071,7 +1071,7 @@ ${(`#define CPP_DEFINE_ERROR_VARIANTS()
 		#define CPP_DEFINE_ERROR_VARIANTS_HAVE_MULTIPLE
 	#endif
 #endif
-    `
+`
     ]
 
     return macros
@@ -1218,7 +1218,7 @@ extern "C" {
 	#define ${fileName.MACRO_NAME()}_NODISCARD [[nodiscard]]
 	#define ${fileName.MACRO_NAME()}_MAYBE_UNUSED [[maybe_unused]]
 #else
-    // see e.g. https://www.gnu.org/software/gnulib/manual/html_node/Attributes.html
+	// see e.g. https://www.gnu.org/software/gnulib/manual/html_node/Attributes.html
 	#define ${fileName.MACRO_NAME()}_NODISCARD __attribute__((__warn_unused_result__))
 	#define ${fileName.MACRO_NAME()}_MAYBE_UNUSED __attribute__((__unused__))
 #endif
