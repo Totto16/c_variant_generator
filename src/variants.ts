@@ -1176,7 +1176,7 @@ export async function generateVariantCodeC(generatedVariantsFileH: string, input
 
     //TODO: here
 
-    const fileName = CaseName.fromSnakeCase(path.basename(generatedVariantsFileH).replace(/\.[^.]*$/, ""))
+    const fileName : CaseName= CaseName.fromSnakeCase("DONE")
 
     const taggedUnions = await getGlobalTaggedUnions(inputDataPath)
 
