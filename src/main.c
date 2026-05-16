@@ -100,7 +100,7 @@ static void assert_fn(const char* const expr, bool value) {
 
 NODISCARD static tstr generate_json_schema(void) {
 
-	JsonSchema schema = get_json_schema();
+	JsonSchema schema = get_json_schema_for_input();
 
 	const tstr result = json_schema_to_string(&schema);
 
