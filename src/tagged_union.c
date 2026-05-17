@@ -3,9 +3,22 @@
 #include "./json.h"
 
 #include <tjson.h>
+#include <tjson_helper.h>
 
-NODISCARD tstr_static get_tagged_unions(const tstr* const input_file,
-                                        TaggedUnionArray* const array) {
+TRTTI_DEFINE_TYPE_AS_SUPPORTED_EXTENDED(TaggedUnionArray*, TaggedUnionArrayPtr)
+
+static JsonIterateResult json_value_iterator_tagged_unions(const JsonPath* path,
+                                                           RTTIAnnotatedValue parent,
+                                                           JsonIterateValue value) {
+	// TODO
+	UNUSED(path);
+	UNUSED(parent);
+	UNUSED(value);
+
+	return new_json_iterate_result_error((JsonIterateError){ .err = TSTR_STATIC_LIT("TODO") });
+}
+
+NODISCARD tstr_static get_tagged_unions(const tstr* const input_file, TaggedUnionArray* array) {
 
 	JsonParseResult parse_result = json_value_parse_from_file(input_file);
 
@@ -45,6 +58,19 @@ NODISCARD tstr_static get_tagged_unions(const tstr* const input_file,
 
 	FREE_AT_END();
 	*array = TVEC_EMPTY(TaggedUnion);
+
+	RTTIAnnotatedValue array_value = TRTTI_ANNOTATED_VALUE_GET(TaggedUnionArrayPtr, &array);
+
+	JsonIterateResult iterate_res =
+	    json_value_iterate(&value, json_value_iterator_tagged_unions, array_value);
+
+	IF_JSON_ITERATE_RESULT_IS_ERROR_CONST(iterate_res) {
+
+		fprintf(stderr, "Json data get error: " TSTR_FMT "\n",
+		        TSTR_STATIC_FMT_ARGS(error.error.err));
+		FREE_AT_END();
+		return TSTR_STATIC_LIT("input file getting after schema check failed");
+	}
 
 	return TSTR_STATIC_LIT("TODO");
 }
