@@ -7,15 +7,29 @@
 
 TRTTI_DEFINE_TYPE_AS_SUPPORTED_EXTENDED(TaggedUnionArray*, TaggedUnionArrayPtr)
 
-static JsonIterateResult json_value_iterator_tagged_unions(const JsonPath* path,
-                                                           RTTIAnnotatedValue parent,
-                                                           JsonIterateValue value) {
+typedef struct {
+	size_t struct_id;
+} TaggedUnionProcessUserdata;
+
+TRTTI_DEFINE_TYPE_AS_SUPPORTED(TaggedUnionProcessUserdata)
+
+static JsonIterateResult json_value_iterator_process_tagged_unions(const JsonPath* path,
+                                                                   RTTIAnnotatedValue parent,
+                                                                   JsonIterateValue value,
+                                                                   RTTIAnnotatedValue userdata) {
 	// TODO
 	UNUSED(path);
 	UNUSED(parent);
 	UNUSED(value);
+	UNUSED(userdata);
 
 	return new_json_iterate_result_error((JsonIterateError){ .err = TSTR_STATIC_LIT("TODO") });
+}
+
+static void json_value_iterator_free_tagged_unions(RTTIAnnotatedValue data) {
+
+	fprintf(stderr, "ERROR: don't know how to free: " TRTTI_TYPE_NAME_FMT "\n",
+	        TRTTI_TYPE_NAME_FMT_ARGS(data.type.name));
 }
 
 NODISCARD tstr_static get_tagged_unions(const tstr* const input_file, TaggedUnionArray* array) {
@@ -61,8 +75,16 @@ NODISCARD tstr_static get_tagged_unions(const tstr* const input_file, TaggedUnio
 
 	RTTIAnnotatedValue array_value = TRTTI_ANNOTATED_VALUE_GET(TaggedUnionArrayPtr, &array);
 
+	TaggedUnionProcessUserdata userdata = {
+		.struct_id = 0,
+	};
+
+	RTTIAnnotatedValue userdata_value =
+	    TRTTI_ANNOTATED_VALUE_GET(TaggedUnionProcessUserdata, &userdata);
+
 	JsonIterateResult iterate_res =
-	    json_value_iterate(&value, json_value_iterator_tagged_unions, array_value);
+	    json_value_iterate(&value, json_value_iterator_process_tagged_unions,
+	                       json_value_iterator_free_tagged_unions, array_value, userdata_value);
 
 	IF_JSON_ITERATE_RESULT_IS_ERROR_CONST(iterate_res) {
 
