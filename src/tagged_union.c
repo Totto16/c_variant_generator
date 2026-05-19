@@ -17,11 +17,46 @@ static JsonIterateResult json_value_iterator_process_tagged_unions(const JsonPat
                                                                    RTTIAnnotatedValue parent,
                                                                    JsonIterateValue value,
                                                                    RTTIAnnotatedValue userdata) {
-	// TODO
-	UNUSED(path);
-	UNUSED(parent);
-	UNUSED(value);
+
 	UNUSED(userdata);
+
+	if(json_path_is_root(path)) {
+
+		IF_JSON_ITERATE_VALUE_IS_OBJECT_START(value) {
+
+			if(!TRTTI_ANNOTATED_VALUE_IS(TaggedUnionArrayPtr, parent)) {
+				return new_json_iterate_result_error((JsonIterateError){
+				    .err = TSTR_STATIC_LIT(
+				        "implementation error, first RTTI value not 'TaggedUnionArrayPtr'") });
+			}
+
+			return new_json_iterate_result_ok(parent);
+		}
+
+		IF_JSON_ITERATE_VALUE_IS_ARRAY_END(value) {
+
+			if(!TRTTI_ANNOTATED_VALUE_IS(TaggedUnionArrayPtr, parent)) {
+				return new_json_iterate_result_error((JsonIterateError){
+				    .err = TSTR_STATIC_LIT(
+				        "implementation error, ARRAY END RTTI value not 'TaggedUnionArrayPtr'") });
+			}
+
+			// NOTE: here we could check some properties of the final result, alias if the type has
+			// all fields set to a valid value
+
+			// NOTE: return NON empty, as this is the toplevel parser, so the return value of this
+			// is the actual result of the json_iterate function!
+
+			return new_json_iterate_result_ok(parent);
+		}
+
+		fprintf(stderr, "ERROR: type: " TRTTI_TYPE_NAME_FMT " tag: %u\n",
+		        TRTTI_TYPE_NAME_FMT_ARGS(parent.type.name),
+		        get_current_tag_type_for_json_iterate_value(value));
+
+		return new_json_iterate_result_error((JsonIterateError){
+		    .err = TSTR_STATIC_LIT("Error: unhandled iterate value in root path") });
+	}
 
 	return new_json_iterate_result_error((JsonIterateError){ .err = TSTR_STATIC_LIT("TODO") });
 }
