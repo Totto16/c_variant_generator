@@ -547,6 +547,11 @@ function getTagTypeFunctionName(name: TaggedName<"union">): string {
     return `get_current_tag_type_for_${name.inner.snake_case()}`
 }
 
+function getTagNameFunctionName(name: TaggedName<"union">): string {
+    return `get_current_tag_name_for_${name.inner.snake_case()}`
+}
+
+
 function generateFunctions(taggedUnion: TaggedUnion, unnamedStructMap: UnnamedStructMap, structOrder: StructOrderResolved, fileName: CaseName): string {
 
     const inlineFunctionSpecifiers = getInlineFunctionSpecifiers(fileName);
@@ -567,6 +572,10 @@ function generateFunctions(taggedUnion: TaggedUnion, unnamedStructMap: UnnamedSt
 
 ${inlineFunctionSpecifiers} ${taggedUnion.enum.name.inner.PascalCase()} ${getTagTypeFunctionName(taggedUnion.name)}(${taggedUnion.name.inner.PascalCase()} ${cConst} variant_entry){
 	return variant_entry.${getUnionTagName(taggedUnion.name)};
+}
+
+${inlineFunctionSpecifiers} tstr_static ${getTagNameFunctionName(taggedUnion.name)}(${taggedUnion.name.inner.PascalCase()} ${cConst} variant_entry){
+	return  ${getStateFunctionName(taggedUnion.name)}(variant_entry.${getUnionTagName(taggedUnion.name)});
 }
 
 ${taggedUnion.member.map((mem): string => {
