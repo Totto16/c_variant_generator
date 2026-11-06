@@ -7,22 +7,28 @@
 
 TRTTI_DEFINE_TYPE_AS_SUPPORTED_EXTENDED(TaggedUnionArray*, TaggedUnionArrayPtr)
 
+TRTTI_DEFINE_TYPE_AS_SUPPORTED(TaggedUnion)
+
 typedef struct {
 	size_t struct_id;
 } TaggedUnionProcessUserdata;
 
 TRTTI_DEFINE_TYPE_AS_SUPPORTED(TaggedUnionProcessUserdata)
 
-static JsonIterateResult json_value_iterator_process_tagged_unions(const JsonPath* path,
-                                                                   RTTIAnnotatedValue parent,
-                                                                   JsonIterateValue value,
-                                                                   RTTIAnnotatedValue userdata) {
+static JsonIterateResult
+json_value_iterator_process_tagged_unions(const JsonPath* path, RTTIAnnotatedValue parent,
+                                          JsonIterateValue value,
+                                          RTTIAnnotatedValue userdata) {
 
-	UNUSED(userdata);
+	TaggedUnionProcessUserdata* union_userdata =
+	    TRTTI_ANNOTATED_VALUE_CAST(TaggedUnionProcessUserdata, userdata);
+
+	UNUSED(union_userdata);
 
 	if(json_path_is_root(path)) {
 
-		IF_JSON_ITERATE_VALUE_IS_OBJECT_START(value) {
+		IF_JSON_ITERATE_VALUE_IS_ARRAY_START(value) {
+			// we already "allocated" (initialized the array), nothing to do here
 
 			if(!TRTTI_ANNOTATED_VALUE_IS(TaggedUnionArrayPtr, parent)) {
 				return new_json_iterate_result_error((JsonIterateError){
@@ -50,9 +56,17 @@ static JsonIterateResult json_value_iterator_process_tagged_unions(const JsonPat
 			return new_json_iterate_result_ok(parent);
 		}
 
-		fprintf(stderr, "ERROR: type: " TRTTI_TYPE_NAME_FMT " tag: %u\n",
-		        TRTTI_TYPE_NAME_FMT_ARGS(parent.type.name),
-		        get_current_tag_type_for_json_iterate_value(value));
+		// process the value in the object
+		IF_JSON_ITERATE_VALUE_IS_ARRAY_PUSH_CONST(value) {
+
+			if(!TRTTI_ANNOTATED_VALUE_IS(TaggedUnion, array_push)) {
+				return new_json_iterate_result_error((JsonIterateError){
+				    .err = TSTR_STATIC_LIT("Error: invalid json value for type that expected: "
+				                           "'TaggedUnion'") });
+			}
+
+			TaggedUnion* tagged_union = TRTTI_ANNOTATED_VALUE_CAST(TaggedUnion, parent);
+		}
 
 		return new_json_iterate_result_error((JsonIterateError){
 		    .err = TSTR_STATIC_LIT("Error: unhandled iterate value in root path") });
@@ -105,7 +119,6 @@ NODISCARD tstr_static get_tagged_unions(const tstr* const input_file, TaggedUnio
 		return TSTR_STATIC_LIT("input file not correct schema");
 	}
 
-	FREE_AT_END();
 	*array = TVEC_EMPTY(TaggedUnion);
 
 	RTTIAnnotatedValue array_value = TRTTI_ANNOTATED_VALUE_GET(TaggedUnionArrayPtr, &array);
@@ -128,6 +141,8 @@ NODISCARD tstr_static get_tagged_unions(const tstr* const input_file, TaggedUnio
 		FREE_AT_END();
 		return TSTR_STATIC_LIT("input file getting after schema check failed");
 	}
+
+	free_json_value(&value);
 
 	return TSTR_STATIC_LIT("TODO");
 }
