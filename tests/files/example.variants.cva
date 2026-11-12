@@ -1,0 +1,45 @@
+
+variant JsonValue {
+    enum JsonValueType {
+        type u8
+    }
+    // or enum "variant" to escape keywords
+
+    options {
+        requirements {
+            order best_size
+        }
+    }
+
+    entry Null {}
+
+    entry Array {
+        struct {
+            entry "arr" {
+                type "JsonArray*"
+            }
+        }
+    }
+    
+    entry Number {
+        type JsonNumber
+        // or type JsonNumber
+        /* multilien comment */
+    }
+
+    entry String {
+        type JsonString*
+    }
+
+    entry Boolean {
+        type JsonBoolean
+    }
+
+    entry Object {
+        struct {
+            entry "obj" {
+                type "JsonObject*"
+            }
+        }
+    }
+}
