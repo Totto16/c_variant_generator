@@ -7,7 +7,7 @@ variant JsonValue {
 
     options {
         requirements {
-            order best_size
+            order "best_size"
         }
     }
 
