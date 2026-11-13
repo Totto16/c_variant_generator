@@ -17,6 +17,8 @@
 // prints the usage, if argc is not the right amount!
 static void print_usage(FILE* stream, const tstr_static program_name) {
 
+	// TODO: colored fprintf
+
 	fprintf(stream, "usage: " TSTR_FMT " <options>\n", TSTR_STATIC_FMT_ARGS(program_name));
 
 	fprintf(stream, IDENT1 "options:\n");
