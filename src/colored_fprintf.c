@@ -43,7 +43,7 @@ int64_t COLORED_FPRINTF_PRINTF_ATTR(2, 3) color_fprintf(FILE* stream, const char
 
 	va_list args;
 
-	bool tty = isatty(fileno(stream)) == 1 || true;
+	bool tty = isatty(fileno(stream)) == 1;
 
 	va_start(args, fmt);
 
