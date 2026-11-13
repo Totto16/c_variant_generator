@@ -13,6 +13,8 @@ TRTTI_DEFINE_TYPE_AS_SUPPORTED(TaggedUnionArray)
 
 TRTTI_DEFINE_TYPE_AS_SUPPORTED(TaggedUnion)
 
+TVEC_IMPLEMENT_VEC_TYPE(TaggedUnion)
+
 typedef struct {
 	size_t struct_id;
 } TaggedUnionProcessUserdata;
@@ -53,6 +55,36 @@ static JsonIterateResult json_value_iterator_process_tagged_unions(const JsonPat
 		    TSTR_STATIC_FMT_ARGS(tag_name));
 	}
 
+	if(TRTTI_ANNOTATED_VALUE_IS(TaggedUnionArray, parent)) {
+
+		TaggedUnionArray* array = TRTTI_ANNOTATED_VALUE_CAST(TaggedUnionArray, parent);
+
+		IF_JSON_ITERATE_VALUE_IS_OBJECT_START(value) {
+
+			TaggedUnion* union_slot = TVEC_PUSH_SLOT(TaggedUnion, array);
+
+			if(union_slot == NULL) {
+				return new_json_iterate_result_error((JsonIterateError){
+				    .err = TSTR_LIT("OOM"),
+				    .path = NULL,
+				});
+			}
+
+			*union_slot = TAGGED_UNION_NULL();
+
+			RTTIAnnotatedValue result = TRTTI_ANNOTATED_VALUE_GET(TaggedUnion, union_slot);
+
+			return new_json_iterate_result_ok(result);
+		}
+
+		tstr_static tag_name = get_current_tag_name_for_json_iterate_value(value);
+
+		RETURN_JSON_ITERATE_ERROR_DYNAMIC(
+		    NULL, "Error: unhandled iterate value at 'TaggedUnionArray': <no more info>",
+		    "Error: unhandled iterate value at 'TaggedUnionArray': " TSTR_FMT,
+		    TSTR_STATIC_FMT_ARGS(tag_name));
+	}
+
 	tstr_static tag_name = get_current_tag_name_for_json_iterate_value(value);
 
 	RETURN_JSON_ITERATE_ERROR_DYNAMIC(
@@ -68,7 +100,17 @@ static void json_value_iterator_free_tagged_unions(RTTIAnnotatedValue data) {
 		TaggedUnionArray* array = TRTTI_ANNOTATED_VALUE_CAST(TaggedUnionArray, data);
 
 		free_tagged_union_array(array);
+		// no free of the pointer as it is a address to the stack of the parent function
 
+		return;
+	}
+
+	if(TRTTI_ANNOTATED_VALUE_IS(TaggedUnion, data)) {
+
+		TaggedUnion* tagged_union = TRTTI_ANNOTATED_VALUE_CAST(TaggedUnion, data);
+
+		free_tagged_union(tagged_union);
+		// no free of the pointer as it is a push slot of the array
 		return;
 	}
 
@@ -184,7 +226,18 @@ NODISCARD tstr_static get_tagged_unions(const tstr* const input_file, TaggedUnio
 
 #undef FREE_AT_END
 
-void free_tagged_union_array(TaggedUnionArray* array) {
+void free_tagged_union(TaggedUnion* tagged_union) {
 	// TODO
-	UNUSED(array);
+	UNUSED(tagged_union);
+}
+
+void free_tagged_union_array(TaggedUnionArray* array) {
+
+	for(size_t i = 0; i < TVEC_LENGTH(TaggedUnion, *array); ++i) {
+		TaggedUnion* value = TVEC_GET_AT_MUT(TaggedUnion, array, i);
+
+		free_tagged_union(value);
+	}
+
+	TVEC_FREE(TaggedUnion, array);
 }
