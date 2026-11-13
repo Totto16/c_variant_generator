@@ -1,0 +1,8 @@
+[wrap-git]
+directory = tjson
+url = https://github.com/Totto16/tjson.git
+revision = c58fd18bc3a8b77a7f0705c5da42dd3cdcf7c80d
+depth = 1
+
+[provide]
+dependency_names = tjson

@@ -1,5 +1,5 @@
 import path from "node:path"
-import { addGenerateMacros, assert, writeFileAndDirs } from "./utils.js"
+import { addGenerateMacros, assert } from "./utils.js"
 import { CaseName, getBrand, isSimpleTaggedType, type CEnumType, type CppFeatures, type ID, type StructOrder, type TaggedMember, type TaggedName, type TaggedType, type TaggedTypeSimple, type TaggedTypeStruct, type TaggedUnion, type TaggedUnionEnum } from "./base.js"
 import { getGlobalTaggedUnions } from "./data.js"
 
@@ -1180,18 +1180,12 @@ function validateTaggedUnion(union: TaggedUnion): void {
     }
 }
 
-export interface ScriptInfo {
-    commit: string,
-    version: string
-}
 
 export async function generateVariantCodeC(generatedVariantsFileH: string, inputDataPath: string, info: ScriptInfo): Promise<void> {
 
-    const tasks: Promise<void>[] = []
+    //TODO: here
 
-    assert(path.extname(generatedVariantsFileH) == ".h", "variant file has to end in .h")
-
-    const fileName = CaseName.fromSnakeCase(path.basename(generatedVariantsFileH).replace(/\.[^.]*$/, ""))
+    const fileName : CaseName= CaseName.fromSnakeCase("DONE")
 
     const taggedUnions = await getGlobalTaggedUnions(inputDataPath)
 
@@ -1346,10 +1340,6 @@ ${getCppFeatures(taggedUnions, fileName)}
 
 /* NOLINTEND(${clangTidyGlobalIgnores.join(",")}) */
 `
-
-    tasks.push(writeFileAndDirs(generatedVariantsFileH, headerData))
-
-    await Promise.all(tasks)
 
 
 }

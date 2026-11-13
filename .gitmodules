@@ -1,0 +1,3 @@
+[submodule "tools/extension"]
+	path = tools/extension
+	url = https://github.com/Totto16/c_variant_generator_extension.git
