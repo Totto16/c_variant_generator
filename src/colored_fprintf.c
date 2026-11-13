@@ -34,7 +34,7 @@ static int64_t fprintf_tstr_partial(FILE* stream, tstr_view str, va_list ap) {
 
 static int64_t fprintf_single_color(FILE* stream, tstr_view str) {
 
-	int result = fprintf(stream, "\33[" TSTR_FMT "m", TSV_FMT_ARGS(str));
+	int result = fprintf(stream, "\x1B[" TSTR_FMT "m", TSV_FMT_ARGS(str));
 
 	return result;
 }
@@ -43,7 +43,7 @@ int64_t COLORED_FPRINTF_PRINTF_ATTR(2, 3) color_fprintf(FILE* stream, const char
 
 	va_list args;
 
-	bool tty = isatty(fileno(stream)) == 1;
+	bool tty = isatty(fileno(stream)) == 1 || true;
 
 	va_start(args, fmt);
 
@@ -91,7 +91,7 @@ int64_t COLORED_FPRINTF_PRINTF_ATTR(2, 3) color_fprintf(FILE* stream, const char
 
 			if(tty) {
 				tstr_view color_info = { .data = fmt + start_idx + 1,
-					                     .len = end_idx - start_idx - 2 };
+					                     .len = end_idx - start_idx - 1 };
 
 				// print the color
 				int64_t result = fprintf_single_color(stream, color_info);
@@ -101,7 +101,7 @@ int64_t COLORED_FPRINTF_PRINTF_ATTR(2, 3) color_fprintf(FILE* stream, const char
 				total_written += result;
 			}
 
-			offs = i;
+			offs = i + 1;
 		}
 	}
 

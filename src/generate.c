@@ -269,13 +269,12 @@ NODISCARD ExitCode generate_variants(tstr_static input, tstr_static output) {
 	tstr_static err2 = get_tagged_unions(&input_abs, &taggedUnions);
 
 	if(!tstr_static_is_null(err2)) {
-		int res = color_fprintf(
-		    stderr,
-		    COLOR_BOLD_RED "Error: " COLOR_RED
-		                   "Can't get the TaggedUnions from the input file: " COLOR_YELLOW TSTR_FMT
-		                   "\n" COLOR_RESET,
-		    TSTR_STATIC_FMT_ARGS(err2));
-		fprintf(stderr, "RES: %d %s\n", res, strerror(errno));
+		color_fprintf(stderr,
+		              COLOR_BOLD_RED
+		              "Error: " COLOR_RED
+		              "Can't get the TaggedUnions from the input file: " COLOR_YELLOW TSTR_FMT
+		              "\n" COLOR_RESET,
+		              TSTR_STATIC_FMT_ARGS(err2));
 		FREE_AT_END();
 		return ExitCodeFailure;
 	}
