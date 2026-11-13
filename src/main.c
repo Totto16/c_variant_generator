@@ -97,7 +97,7 @@ static void assert_fn(const char* const expr, bool value) {
 }
 	#define ASSERT_EXPR(expr) assert_fn(#expr, expr)
 #else
-	#define ASSERT_EXPR(expr) assert(expr)
+	#define ASSERT_EXPR(expr) ASSERT(expr)
 #endif
 
 #define PROGRAM_ARGS_AT(args, index) \

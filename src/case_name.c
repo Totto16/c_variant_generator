@@ -172,7 +172,7 @@ NODISCARD CaseName* case_name_from_PascalCase(const tstr* snake_case, tstr_stati
 
 				tstr allocated = tstr_from_view(current);
 
-				assert(tstr_len(&allocated) > 1);
+				ASSERT(tstr_len(&allocated) > 1);
 
 				tstr_data(&allocated)[0] = tolower(tstr_data(&allocated)[0]);
 

@@ -86,10 +86,14 @@ typedef enum C_23_NARROW_ENUM_TO(uint8_t) {
 // cool trick from here:
 // https://stackoverflow.com/questions/777261/avoiding-unused-variables-warnings-when-using-assert-in-a-release-build
 #ifdef NDEBUG
-	#define assert(x) /* NOLINT(readability-identifier-naming) */ \
+	#define ASSERT(x) \
 		do { \
 			UNUSED((x)); \
 		} while(false)
+
+	#ifndef assert
+		#define assert(x) ASSERT(x) /* NOLINT(readability-identifier-naming) */
+	#endif
 
 	#define UNREACHABLE() \
 		do { \
@@ -117,6 +121,8 @@ typedef enum C_23_NARROW_ENUM_TO(uint8_t) {
 		do { \
 			assert((value) && (message)); /* NOLINT(cert-dcl03-c,misc-static-assert) */ \
 		} while(false)
+
+	#define ASSERT(x) assert(x)
 
 #endif
 
