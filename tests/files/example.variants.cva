@@ -24,7 +24,7 @@ variant JsonValue {
     entry Number {
         type JsonNumber
         // or type JsonNumber
-        /* multilien comment */
+        /* multiline comment */
     }
 
     entry String {
