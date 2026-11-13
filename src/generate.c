@@ -220,8 +220,8 @@ NODISCARD ExitCode generate_variants(tstr_static input, tstr_static output) {
 
 	if(!tstr_view_eq_view(input_extension, TSTR_TSV(".json"))) {
 		color_fprintf(stderr,
-		              COLOR_RED "Input file has not a .json extension:" COLOR_YELLOW TSTR_FMT
-		                        "\n" COLOR_RESET,
+		              COLOR_RED "Input file has not a " COLOR_YELLOW ".json" COLOR_RED
+		                        " extension: " COLOR_YELLOW TSTR_FMT "\n" COLOR_RESET,
 		              TSV_FMT_ARGS(input_extension));
 		FREE_AT_END();
 		return ExitCodeFailure;
@@ -231,8 +231,8 @@ NODISCARD ExitCode generate_variants(tstr_static input, tstr_static output) {
 
 	if(!tstr_view_eq_view(output_extension, TSTR_TSV(".h"))) {
 		color_fprintf(stderr,
-		              COLOR_RED "Output file has not a .h extension:" COLOR_YELLOW TSTR_FMT
-		                        "\n" COLOR_RESET,
+		              COLOR_RED "Output file has not a " COLOR_YELLOW ".h" COLOR_RED
+		                        " extension: " COLOR_YELLOW TSTR_FMT "\n" COLOR_RESET,
 		              TSV_FMT_ARGS(output_extension));
 		FREE_AT_END();
 		return ExitCodeFailure;
