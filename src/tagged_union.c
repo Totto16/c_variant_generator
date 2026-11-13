@@ -72,8 +72,10 @@ static void json_value_iterator_free_tagged_unions(RTTIAnnotatedValue data) {
 		return;
 	}
 
-	fprintf(stderr, "ERROR: don't know how to free: " TRTTI_TYPE_NAME_FMT "\n",
-	        TRTTI_TYPE_NAME_FMT_ARGS(data.type.name));
+	color_fprintf(stderr,
+	              COLOR_RED "ERROR: don't know how to free: " COLOR_YELLOW TRTTI_TYPE_NAME_FMT
+	                        "\n" COLOR_RESET,
+	              TRTTI_TYPE_NAME_FMT_ARGS(data.type.name));
 }
 
 NODISCARD static bool file_exists(const tstr* const input_file) {
@@ -92,7 +94,9 @@ NODISCARD static bool file_exists(const tstr* const input_file) {
 NODISCARD tstr_static get_tagged_unions(const tstr* const input_file, TaggedUnionArray* array) {
 
 	if(!file_exists(input_file)) {
-		fprintf(stderr, "File does not exist: " TSTR_FMT "\n", TSTR_FMT_ARGS(*input_file));
+		color_fprintf(stderr,
+		              COLOR_RED "File does not exist: " COLOR_YELLOW TSTR_FMT "\n" COLOR_RESET,
+		              TSTR_FMT_ARGS(*input_file));
 		return TSTR_STATIC_LIT("file does not exist");
 	}
 
@@ -103,11 +107,12 @@ NODISCARD tstr_static get_tagged_unions(const tstr* const input_file, TaggedUnio
 		tstr error_str = json_format_error(error);
 
 		if(tstr_is_null(&error_str)) {
-			fprintf(stderr, "File parse error: <unknown>\n");
+			color_fprintf(stderr, COLOR_RED "File parse error: <unknown>\n" COLOR_RESET);
 			return TSTR_STATIC_LIT("file parse error");
 		}
 
-		fprintf(stderr, "File parse error: " TSTR_FMT "\n", TSTR_FMT_ARGS(error_str));
+		color_fprintf(stderr, COLOR_RED "File parse error: " COLOR_YELLOW TSTR_FMT "\n" COLOR_RESET,
+		              TSTR_FMT_ARGS(error_str));
 		tstr_free(&error_str);
 		return TSTR_STATIC_LIT("file parse error");
 	}
@@ -127,7 +132,8 @@ NODISCARD tstr_static get_tagged_unions(const tstr* const input_file, TaggedUnio
 
 	if(!tstr_is_null(&json_schema_error)) {
 
-		fprintf(stderr, "Schema error: " TSTR_FMT "\n", TSTR_FMT_ARGS(json_schema_error));
+		color_fprintf(stderr, COLOR_RED "Schema error: " COLOR_YELLOW TSTR_FMT "\n" COLOR_RESET,
+		              TSTR_FMT_ARGS(json_schema_error));
 		tstr_free(&json_schema_error);
 		FREE_AT_END();
 		return TSTR_STATIC_LIT("input file not correct schema");

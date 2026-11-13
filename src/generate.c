@@ -172,7 +172,8 @@ NODISCARD static CaseName* get_file_name_as_case_name(const tstr* file, tstr_sta
 NODISCARD ExitCode generate_variants(tstr_static input, tstr_static output) {
 
 	if(input.ptr == NULL || output.ptr == NULL) {
-		fprintf(stderr, "IMPLEMENTATION ERROR: input strings are <NULL>\n");
+		color_fprintf(stderr,
+		              COLOR_RED "IMPLEMENTATION ERROR: input strings are <NULL>\n" COLOR_RESET);
 		return ExitCodeFailure;
 	}
 
@@ -183,8 +184,10 @@ NODISCARD ExitCode generate_variants(tstr_static input, tstr_static output) {
 	tstr input_abs = cwk_wrapper_make_absolute(input);
 
 	if(tstr_is_null(&input_abs)) {
-		fprintf(stderr, "Input file path can't be made absolute: " TSTR_FMT "\n",
-		        TSTR_STATIC_FMT_ARGS(input));
+		color_fprintf(stderr,
+		              COLOR_RED "Input file path can't be made absolute: " COLOR_YELLOW TSTR_FMT
+		                        "\n" COLOR_RESET,
+		              TSTR_STATIC_FMT_ARGS(input));
 		FREE_AT_END();
 		return ExitCodeFailure;
 	}
@@ -198,8 +201,10 @@ NODISCARD ExitCode generate_variants(tstr_static input, tstr_static output) {
 	tstr output_abs = cwk_wrapper_make_absolute(output);
 
 	if(tstr_is_null(&output_abs)) {
-		fprintf(stderr, "Output file path can't be made absolute: " TSTR_FMT "\n",
-		        TSTR_STATIC_FMT_ARGS(output));
+		color_fprintf(stderr,
+		              COLOR_RED "Output file path can't be made absolute: " COLOR_YELLOW TSTR_FMT
+		                        "\n" COLOR_RESET,
+		              TSTR_STATIC_FMT_ARGS(output));
 		FREE_AT_END();
 		return ExitCodeFailure;
 	}
@@ -214,8 +219,10 @@ NODISCARD ExitCode generate_variants(tstr_static input, tstr_static output) {
 	const tstr_view input_extension = cwk_wrapper_get_ext(&input_abs);
 
 	if(!tstr_view_eq_view(input_extension, TSTR_TSV(".json"))) {
-		fprintf(stderr, "Input file has not a .json extension:" TSTR_FMT "\n",
-		        TSV_FMT_ARGS(input_extension));
+		color_fprintf(stderr,
+		              COLOR_RED "Input file has not a .json extension:" COLOR_YELLOW TSTR_FMT
+		                        "\n" COLOR_RESET,
+		              TSV_FMT_ARGS(input_extension));
 		FREE_AT_END();
 		return ExitCodeFailure;
 	}
@@ -223,8 +230,10 @@ NODISCARD ExitCode generate_variants(tstr_static input, tstr_static output) {
 	const tstr_view output_extension = cwk_wrapper_get_ext(&output_abs);
 
 	if(!tstr_view_eq_view(output_extension, TSTR_TSV(".h"))) {
-		fprintf(stderr, "Output file has not a .h extension:" TSTR_FMT "\n",
-		        TSV_FMT_ARGS(output_extension));
+		color_fprintf(stderr,
+		              COLOR_RED "Output file has not a .h extension:" COLOR_YELLOW TSTR_FMT
+		                        "\n" COLOR_RESET,
+		              TSV_FMT_ARGS(output_extension));
 		FREE_AT_END();
 		return ExitCodeFailure;
 	}
@@ -249,8 +258,11 @@ NODISCARD ExitCode generate_variants(tstr_static input, tstr_static output) {
 	CaseName* file_name = get_file_name_as_case_name(&output_abs, &err);
 
 	if(file_name == NULL) {
-		fprintf(stderr, "Error: Can't get the CaseName for the filename: " TSTR_FMT "\n",
-		        TSTR_STATIC_FMT_ARGS(err));
+		color_fprintf(stderr,
+		              COLOR_RED
+		              "Error: Can't get the CaseName for the filename: " COLOR_YELLOW TSTR_FMT
+		              "\n" COLOR_RESET,
+		              TSTR_STATIC_FMT_ARGS(err));
 		FREE_AT_END();
 		return ExitCodeFailure;
 	}
@@ -294,7 +306,8 @@ NODISCARD ExitCode generate_variants(tstr_static input, tstr_static output) {
 	tstr value = string_builder_release_into_tstr(&string_builder);
 
 	if(tstr_is_null(&value)) {
-		fprintf(stderr, "Error: couldn't get string from string builder\n");
+		color_fprintf(stderr,
+		              COLOR_RED "Error: couldn't get string from string builder\n" COLOR_RESET);
 		FREE_AT_END();
 		return ExitCodeFailure;
 	}
@@ -313,8 +326,10 @@ NODISCARD ExitCode generate_variants(tstr_static input, tstr_static output) {
 	bool write_result = write_file_helper(output, &value);
 
 	if(!write_result) {
-		fprintf(stderr, "Error: couldn't write to file: " TSTR_FMT "\n",
-		        TSTR_STATIC_FMT_ARGS(input));
+		color_fprintf(stderr,
+		              COLOR_RED "Error: couldn't write to file: " COLOR_YELLOW TSTR_FMT
+		                        "\n" COLOR_RESET,
+		              TSTR_STATIC_FMT_ARGS(input));
 		FREE_AT_END();
 		return ExitCodeFailure;
 	}
