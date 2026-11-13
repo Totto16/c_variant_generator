@@ -7,6 +7,7 @@
 
 #include <tstr.h>
 
+#include "./colored_fprintf.h"
 #include "./generate.h"
 #include "./json.h"
 #include "./utils.h"
@@ -17,18 +18,20 @@
 // prints the usage, if argc is not the right amount!
 static void print_usage(FILE* stream, const tstr_static program_name) {
 
-	// TODO: colored fprintf
+	color_fprintf(stream, COLOR_CYAN "usage: " COLOR_YELLOW TSTR_FMT " <options>\n" COLOR_RESET,
+	              TSTR_STATIC_FMT_ARGS(program_name));
 
-	fprintf(stream, "usage: " TSTR_FMT " <options>\n", TSTR_STATIC_FMT_ARGS(program_name));
-
-	fprintf(stream, IDENT1 "options:\n");
-	fprintf(stream, IDENT2 "-i, --input <input>: the input file in json format (required)\n");
-	fprintf(stream, IDENT2 "-o, --output <output>: the output file (required)\n");
-	fprintf(stream, IDENT1 "other:\n");
-	fprintf(stream, IDENT2 "-h, -?, --help: print the help / usage\n");
-	fprintf(stream, IDENT2 "-v, --version: print the version\n");
-	fprintf(stream, IDENT2 "-g, -p, --get-schema, --print-schema, --variant-json-schema: print the "
-	                       "schema for the input json file\n");
+	color_fprintf(stream, IDENT1 COLOR_CYAN "options:\n" COLOR_RESET);
+	color_fprintf(stream,
+	              IDENT2 COLOR_CYAN "-i, --input " COLOR_YELLOW "<input>" COLOR_CYAN ":" COLOR_WHITE
+	                                " the input file in json format (required)\n" COLOR_RESET);
+	color_fprintf(stream, IDENT2 "-o, --output <output>: the output file (required)\n");
+	color_fprintf(stream, IDENT1 "other:\n");
+	color_fprintf(stream, IDENT2 "-h, -?, --help: print the help / usage\n");
+	color_fprintf(stream, IDENT2 "-v, --version: print the version\n");
+	color_fprintf(stream,
+	              IDENT2 "-g, -p, --get-schema, --print-schema, --variant-json-schema: print the "
+	                     "schema for the input json file\n");
 }
 
 NODISCARD static bool is_help_string(const tstr_static str) {

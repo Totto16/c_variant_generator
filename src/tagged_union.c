@@ -1,5 +1,6 @@
 
 #include "./tagged_union.h"
+#include "./colored_fprintf.h"
 #include "./json.h"
 
 #include <tjson.h>
@@ -152,14 +153,17 @@ NODISCARD tstr_static get_tagged_unions(const tstr* const input_file, TaggedUnio
 		auto err_str = json_iterate_error_to_str(&(error->error));
 
 		if(tstr_is_null(&err_str)) {
-			fprintf(stderr, "Json data get error: <unknown>\n");
+			color_fprintf(stderr,
+			              COLOR_RED "Json data get error: " COLOR_YELLOW "<unknown>\n" COLOR_RESET);
 
 			free_json_iterate_error(&(error->error));
 			FREE_AT_END();
 			return TSTR_STATIC_LIT("input file getting after schema check failed");
 		}
 
-		fprintf(stderr, "Json data get error: " TSTR_FMT "\n", TSTR_FMT_ARGS(err_str));
+		color_fprintf(stderr,
+		              COLOR_RED "Json data get error: " COLOR_YELLOW TSTR_FMT "\n" COLOR_RESET,
+		              TSTR_FMT_ARGS(err_str));
 
 		tstr_free(&err_str);
 		free_json_iterate_error(&(error->error));
