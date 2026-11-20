@@ -23,9 +23,6 @@ DEFINE_TAGGED_NAME(UnionName, union)
 
 DEFINE_TAGGED_NAME(MemberName, member)
 
-#define TAGGED_NAME_NULL(Name, name_member) \
-	((Name){ .name = NULL, .TAGE_NAME_IMPL(name_member) = {} })
-
 typedef struct {
 	tstr name;
 } TaggedTypeSimple;
@@ -97,22 +94,11 @@ typedef struct {
 	CEnumType underlying_type;
 } TaggedUnionEnum;
 
-#define TAGGED_UNION_ENUM_NULL() \
-	((TaggedUnionEnum){ \
-	    .name = TAGGED_NAME_NULL(EnumName, enum), \
-	    .underlying_type = CEnumTypeBestMatch, \
-	})
-
 DEFINE_TAGGED_NAME(RawStructName, raw_struct)
 
 typedef struct {
 	bool tag_as_error_variant;
 } CppFeatures;
-
-#define CPP_FEATURES_NULL() \
-	((CppFeatures){ \
-	    .tag_as_error_variant = false, \
-	})
 
 /**
  * @enum value
@@ -137,11 +123,6 @@ typedef struct {
 	StructOrderRequirement order;
 } TaggedUnionRequirements;
 
-#define TAGGED_UNION_REQUIREMENTS_NULL() \
-	((TaggedUnionRequirements){ \
-	    .order = StructOrderRequirementBestSize, \
-	})
-
 typedef struct {
 	RawStructName raw_struct;
 	StructOrder struct_order;
@@ -149,28 +130,12 @@ typedef struct {
 	CppFeatures cpp_features;
 } TaggedUnionOptions;
 
-#define TAGGED_UNION_OPTIONS_NULL() \
-	((TaggedUnionOptions){ \
-	    .raw_struct = TAGGED_NAME_NULL(RawStructName, raw_struct), \
-	    .struct_order = StructOrderAuto, \
-	    .requirements = TAGGED_UNION_REQUIREMENTS_NULL(), \
-	    .cpp_features = CPP_FEATURES_NULL(), \
-	})
-
 typedef struct {
 	UnionName name;
 	TaggedMemberArray member;
 	TaggedUnionEnum enum_props;
 	TaggedUnionOptions options;
 } TaggedUnion;
-
-#define TAGGED_UNION_NULL() \
-	((TaggedUnion){ \
-	    .name = TAGGED_NAME_NULL(UnionName, union), \
-	    .member = TVEC_EMPTY(TaggedMember), \
-	    .enum_props = TAGGED_UNION_ENUM_NULL(), \
-	    .options = TAGGED_UNION_OPTIONS_NULL(), \
-	})
 
 TVEC_DEFINE_VEC_TYPE(TaggedUnion)
 

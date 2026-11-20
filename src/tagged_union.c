@@ -13,7 +13,56 @@ TRTTI_DEFINE_TYPE_AS_SUPPORTED(TaggedUnionArray)
 
 TRTTI_DEFINE_TYPE_AS_SUPPORTED(TaggedUnion)
 
+TRTTI_DEFINE_TYPE_AS_SUPPORTED(TaggedMemberArray)
+
+TRTTI_DEFINE_TYPE_AS_SUPPORTED(TaggedMember)
+
 TVEC_IMPLEMENT_VEC_TYPE(TaggedUnion)
+
+TVEC_IMPLEMENT_VEC_TYPE(TaggedMember)
+
+#define TAGGED_NAME_NULL(Name, name_member) \
+	((Name){ .name = NULL, .TAGE_NAME_IMPL(name_member) = {} })
+
+#define TAGGED_UNION_ENUM_NULL() \
+	((TaggedUnionEnum){ \
+	    .name = TAGGED_NAME_NULL(EnumName, enum), \
+	    .underlying_type = CEnumTypeBestMatch, \
+	})
+
+#define CPP_FEATURES_NULL() \
+	((CppFeatures){ \
+	    .tag_as_error_variant = false, \
+	})
+
+#define TAGGED_UNION_REQUIREMENTS_NULL() \
+	((TaggedUnionRequirements){ \
+	    .order = StructOrderRequirementBestSize, \
+	})
+
+#define TAGGED_UNION_OPTIONS_NULL() \
+	((TaggedUnionOptions){ \
+	    .raw_struct = TAGGED_NAME_NULL(RawStructName, raw_struct), \
+	    .struct_order = StructOrderAuto, \
+	    .requirements = TAGGED_UNION_REQUIREMENTS_NULL(), \
+	    .cpp_features = CPP_FEATURES_NULL(), \
+	})
+
+#define TAGGED_UNION_NULL() \
+	((TaggedUnion){ \
+	    .name = TAGGED_NAME_NULL(UnionName, union), \
+	    .member = TVEC_EMPTY(TaggedMember), \
+	    .enum_props = TAGGED_UNION_ENUM_NULL(), \
+	    .options = TAGGED_UNION_OPTIONS_NULL(), \
+	})
+
+#define TAGGED_TYPE_NULL() ((TaggedType){ .type = TaggedTypeTypeNull, .data = {} })
+
+#define TAGGED_MEMBER_NULL() \
+	((TaggedMember){ \
+	    .name = TAGGED_NAME_NULL(MemberName, member), \
+	    .type = TAGGED_TYPE_NULL(), \
+	})
 
 typedef struct {
 	size_t struct_id;
@@ -82,6 +131,62 @@ static JsonIterateResult json_value_iterator_process_tagged_unions(const JsonPat
 		RETURN_JSON_ITERATE_ERROR_DYNAMIC(
 		    NULL, "Error: unhandled iterate value at 'TaggedUnionArray': <no more info>",
 		    "Error: unhandled iterate value at 'TaggedUnionArray': " TSTR_FMT,
+		    TSTR_STATIC_FMT_ARGS(tag_name));
+	}
+
+	if(TRTTI_ANNOTATED_VALUE_IS(TaggedUnion, parent)) {
+
+		TaggedUnion* tagged_union = TRTTI_ANNOTATED_VALUE_CAST(TaggedUnion, parent);
+
+		IF_JSON_ITERATE_VALUE_IS_ARRAY_START(value) {
+
+			// TODO: assert that the key is "member"
+			// TODO: assert that its not a duplicate, e.g. that member is empty (emoty array)
+
+			tagged_union->member = TVEC_EMPTY(TaggedMember);
+
+			TaggedMemberArray* member_slot = &(tagged_union->member);
+
+			RTTIAnnotatedValue result = TRTTI_ANNOTATED_VALUE_GET(TaggedMemberArray, member_slot);
+
+			return new_json_iterate_result_ok(result);
+		}
+
+		tstr_static tag_name = get_current_tag_name_for_json_iterate_value(value);
+
+		RETURN_JSON_ITERATE_ERROR_DYNAMIC(
+		    NULL, "Error: unhandled iterate value at 'TaggedUnion': <no more info>",
+		    "Error: unhandled iterate value at 'TaggedUnion': " TSTR_FMT,
+		    TSTR_STATIC_FMT_ARGS(tag_name));
+	}
+
+	if(TRTTI_ANNOTATED_VALUE_IS(TaggedMemberArray, parent)) {
+
+		TaggedMemberArray* array = TRTTI_ANNOTATED_VALUE_CAST(TaggedMemberArray, parent);
+
+		IF_JSON_ITERATE_VALUE_IS_OBJECT_START(value) {
+
+			TaggedMember* member_slot = TVEC_PUSH_SLOT(TaggedMember, array);
+
+			if(member_slot == NULL) {
+				return new_json_iterate_result_error((JsonIterateError){
+				    .err = TSTR_LIT("OOM"),
+				    .path = NULL,
+				});
+			}
+
+			*member_slot = TAGGED_MEMBER_NULL();
+
+			RTTIAnnotatedValue result = TRTTI_ANNOTATED_VALUE_GET(TaggedMember, member_slot);
+
+			return new_json_iterate_result_ok(result);
+		}
+
+		tstr_static tag_name = get_current_tag_name_for_json_iterate_value(value);
+
+		RETURN_JSON_ITERATE_ERROR_DYNAMIC(
+		    NULL, "Error: unhandled iterate value at 'TaggedMemberArray': <no more info>",
+		    "Error: unhandled iterate value at 'TaggedMemberArray': " TSTR_FMT,
 		    TSTR_STATIC_FMT_ARGS(tag_name));
 	}
 
