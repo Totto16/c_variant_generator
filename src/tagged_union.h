@@ -54,6 +54,8 @@ typedef enum C_23_NARROW_ENUM_TO(uint8_t) {
 	TaggedTypeTypeStruct,
 } TaggedTypeType;
 
+NODISCARD tstr_static tagged_type_type_as_string(TaggedTypeType type);
+
 // manual "variant", but as this project generates them it is required at least atm,
 // TODO: later use v1 to generate a bootstrap file for this variant!
 typedef struct {

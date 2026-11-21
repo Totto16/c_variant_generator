@@ -17,6 +17,10 @@ TRTTI_DEFINE_TYPE_AS_SUPPORTED(TaggedMemberArray)
 
 TRTTI_DEFINE_TYPE_AS_SUPPORTED(TaggedMember)
 
+TRTTI_DEFINE_TYPE_AS_SUPPORTED(TaggedType)
+
+TRTTI_DEFINE_TYPE_AS_SUPPORTED(CAnonymousStruct)
+
 TVEC_IMPLEMENT_VEC_TYPE(TaggedUnion)
 
 TVEC_IMPLEMENT_VEC_TYPE(TaggedMember)
@@ -64,11 +68,30 @@ TVEC_IMPLEMENT_VEC_TYPE(TaggedMember)
 	    .type = TAGGED_TYPE_NULL(), \
 	})
 
+#define C_ANONYMOUS_STRUCT_NULL() ((CAnonymousStruct){ .members = TVEC_EMPTY(StructMember) })
+
 typedef struct {
 	size_t struct_id;
 } TaggedUnionProcessUserdata;
 
 TRTTI_DEFINE_TYPE_AS_SUPPORTED(TaggedUnionProcessUserdata)
+
+NODISCARD tstr_static tagged_type_type_as_string(TaggedTypeType type) {
+	switch(type) {
+		case TaggedTypeTypeNull: {
+			return TSTR_STATIC_LIT("null");
+		}
+		case TaggedTypeTypeSimple: {
+			return TSTR_STATIC_LIT("simple");
+		}
+		case TaggedTypeTypeStruct: {
+			return TSTR_STATIC_LIT("struct");
+		}
+		default: {
+			return TSTR_STATIC_LIT("<unknown>");
+		}
+	}
+}
 
 static JsonIterateResult json_value_iterator_process_tagged_unions(const JsonPath* path,
                                                                    RTTIAnnotatedValue parent,
@@ -141,7 +164,7 @@ static JsonIterateResult json_value_iterator_process_tagged_unions(const JsonPat
 		IF_JSON_ITERATE_VALUE_IS_ARRAY_START(value) {
 
 			// TODO: assert that the key is "member"
-			// TODO: assert that its not a duplicate, e.g. that member is empty (emoty array)
+			// TODO: assert that its not a duplicate, e.g. that member is empty (empty array)
 
 			tagged_union->member = TVEC_EMPTY(TaggedMember);
 
@@ -190,6 +213,72 @@ static JsonIterateResult json_value_iterator_process_tagged_unions(const JsonPat
 		    TSTR_STATIC_FMT_ARGS(tag_name));
 	}
 
+	if(TRTTI_ANNOTATED_VALUE_IS(TaggedMember, parent)) {
+
+		TaggedMember* member = TRTTI_ANNOTATED_VALUE_CAST(TaggedMember, parent);
+
+		IF_JSON_ITERATE_VALUE_IS_OBJECT_START(value) {
+
+			// TODO: assert that the key is "type"
+			// TODO: assert that its not a duplicate, e.g. that type is empty
+
+			member->type = TAGGED_TYPE_NULL();
+
+			TaggedType* type_slot = &(member->type);
+
+			RTTIAnnotatedValue result = TRTTI_ANNOTATED_VALUE_GET(TaggedType, type_slot);
+
+			return new_json_iterate_result_ok(result);
+		}
+
+		tstr_static tag_name = get_current_tag_name_for_json_iterate_value(value);
+
+		RETURN_JSON_ITERATE_ERROR_DYNAMIC(
+		    NULL, "Error: unhandled iterate value at 'TaggedMember': <no more info>",
+		    "Error: unhandled iterate value at 'TaggedMember': " TSTR_FMT,
+		    TSTR_STATIC_FMT_ARGS(tag_name));
+	}
+
+	if(TRTTI_ANNOTATED_VALUE_IS(TaggedType, parent)) {
+
+		TaggedType* tagged_type = TRTTI_ANNOTATED_VALUE_CAST(TaggedType, parent);
+
+		IF_JSON_ITERATE_VALUE_IS_OBJECT_START(value) {
+
+			if(tagged_type->type != TaggedTypeTypeNull) {
+				// we have already initialized this
+
+				tstr_static tag_name = tagged_type_type_as_string(tagged_type->type);
+
+				RETURN_JSON_ITERATE_ERROR_DYNAMIC(
+				    NULL, "Error: 'TaggedType' was encountered multiple times: <no more info>",
+				    "Error: 'TaggedType' was encountered multiple times: " TSTR_FMT,
+				    TSTR_STATIC_FMT_ARGS(tag_name));
+			}
+			// TODO: assert that the key is "struct"
+
+			*tagged_type = (TaggedType){
+				.type = TaggedTypeTypeStruct,
+				.data = { .struct_type = { union_userdata->struct_id,
+				                           .struct_value = C_ANONYMOUS_STRUCT_NULL() } }
+			};
+			++(union_userdata->struct_id);
+
+			CAnonymousStruct* struct_slot = &(tagged_type->data.struct_type.struct_value);
+
+			RTTIAnnotatedValue result = TRTTI_ANNOTATED_VALUE_GET(CAnonymousStruct, struct_slot);
+
+			return new_json_iterate_result_ok(result);
+		}
+
+		tstr_static tag_name = get_current_tag_name_for_json_iterate_value(value);
+
+		RETURN_JSON_ITERATE_ERROR_DYNAMIC(
+		    NULL, "Error: unhandled iterate value at 'TaggedMember': <no more info>",
+		    "Error: unhandled iterate value at 'TaggedMember': " TSTR_FMT,
+		    TSTR_STATIC_FMT_ARGS(tag_name));
+	}
+
 	tstr_static tag_name = get_current_tag_name_for_json_iterate_value(value);
 
 	RETURN_JSON_ITERATE_ERROR_DYNAMIC(
@@ -198,6 +287,12 @@ static JsonIterateResult json_value_iterator_process_tagged_unions(const JsonPat
 	    TSTR_STATIC_FMT_ARGS(tag_name), TRTTI_TYPE_NAME_FMT_ARGS(parent.type.name));
 }
 
+static void free_tagged_type(TaggedType* tagged_type);
+
+static void free_tagged_member(TaggedMember* tagged_member);
+
+static void free_tagged_member_array(TaggedMemberArray* tagged_member_array);
+
 static void json_value_iterator_free_tagged_unions(RTTIAnnotatedValue data) {
 
 	if(TRTTI_ANNOTATED_VALUE_IS(TaggedUnionArray, data)) {
@@ -205,7 +300,8 @@ static void json_value_iterator_free_tagged_unions(RTTIAnnotatedValue data) {
 		TaggedUnionArray* array = TRTTI_ANNOTATED_VALUE_CAST(TaggedUnionArray, data);
 
 		free_tagged_union_array(array);
-		// no free of the pointer as it is a address to the stack of the parent function
+		// TODO: is that really true now
+		//  no free of the pointer as it is a address to the stack of the parent function
 
 		return;
 	}
@@ -218,6 +314,36 @@ static void json_value_iterator_free_tagged_unions(RTTIAnnotatedValue data) {
 		// no free of the pointer as it is a push slot of the array
 		return;
 	}
+
+	if(TRTTI_ANNOTATED_VALUE_IS(TaggedMemberArray, data)) {
+
+		TaggedMemberArray* array = TRTTI_ANNOTATED_VALUE_CAST(TaggedMemberArray, data);
+
+		free_tagged_member_array(array);
+		// no free of the pointer as it is a push slot of the struct
+
+		return;
+	}
+
+	if(TRTTI_ANNOTATED_VALUE_IS(TaggedMember, data)) {
+
+		TaggedMember* tagged_member = TRTTI_ANNOTATED_VALUE_CAST(TaggedMember, data);
+
+		free_tagged_member(tagged_member);
+		// no free of the pointer as it is a push slot of the array
+		return;
+	}
+
+	if(TRTTI_ANNOTATED_VALUE_IS(TaggedType, data)) {
+
+		TaggedType* tagged_type = TRTTI_ANNOTATED_VALUE_CAST(TaggedType, data);
+
+		free_tagged_type(tagged_type);
+		// no free of the pointer as it is a push slot of the struct
+		return;
+	}
+
+	//TODO: CAnonymousStruct
 
 	color_fprintf(stderr,
 	              COLOR_RED "ERROR: don't know how to free: " COLOR_YELLOW TRTTI_TYPE_NAME_FMT
@@ -303,7 +429,7 @@ NODISCARD tstr_static get_tagged_unions(const tstr* const input_file, TaggedUnio
 
 	IF_JSON_ITERATE_RESULT_IS_ERROR_MUT_REF(&iterate_res) {
 
-		auto err_str = json_iterate_error_to_str(&(error->error));
+		tstr err_str = json_iterate_error_to_str(&(error->error));
 
 		if(tstr_is_null(&err_str)) {
 			color_fprintf(stderr,
@@ -330,6 +456,21 @@ NODISCARD tstr_static get_tagged_unions(const tstr* const input_file, TaggedUnio
 }
 
 #undef FREE_AT_END
+
+static void free_tagged_type(TaggedType* tagged_type) {
+	// TODO
+	UNUSED(tagged_type);
+}
+
+static void free_tagged_member(TaggedMember* tagged_member) {
+	// TODO
+	UNUSED(tagged_member);
+}
+
+static void free_tagged_member_array(TaggedMemberArray* tagged_member_array) {
+	// TODO
+	UNUSED(tagged_member_array);
+}
 
 void free_tagged_union(TaggedUnion* tagged_union) {
 	// TODO
