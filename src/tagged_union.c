@@ -74,7 +74,7 @@ TRTTI_DEFINE_TYPE_AS_SUPPORTED(CaseNameWrapper)
 	    .options = TAGGED_UNION_OPTIONS_NULL(), \
 	})
 
-#define TAGGED_TYPE_NULL() ((TaggedType){ .type = TaggedTypeTypeNull, .data = {} })
+#define TAGGED_TYPE_NULL() ((TaggedType){ .type = TaggedTypeTypeInvalid, .data = {} })
 
 #define TAGGED_MEMBER_NULL() \
 	((TaggedMember){ \
@@ -106,6 +106,9 @@ NODISCARD tstr_static tagged_type_type_as_string(TaggedTypeType type) {
 		}
 		case TaggedTypeTypeStruct: {
 			return TSTR_STATIC_LIT("struct");
+		}
+		case TaggedTypeTypeInvalid: {
+			return TSTR_STATIC_LIT("<invalid>");
 		}
 		default: {
 			return TSTR_STATIC_LIT("<unknown>");
@@ -224,6 +227,28 @@ static JsonIterateResult json_value_iterator_process_tagged_unions(const JsonPat
 			RTTIAnnotatedValue result = TRTTI_ANNOTATED_VALUE_GET(TaggedMember, member_slot);
 
 			return new_json_iterate_result_ok(result);
+		}
+
+		IF_JSON_ITERATE_VALUE_IS_ARRAY_PUSH_IGN(value) {
+
+			// note if we use allocated data and push here, we could push the data here, but we
+			// use a push slot algorithm, so nothing to do here, we could validate the finished
+			// entry if we like
+
+			RTTIAnnotatedValue empty = TRTTI_ANNOTATED_VALUE_GET_EMPTY();
+
+			return new_json_iterate_result_ok(empty);
+		}
+
+		IF_JSON_ITERATE_VALUE_IS_ARRAY_END(value) {
+
+			// NOTE: here we could check some properties of the final result, alias if the type
+			// has all fields set to a valid value
+
+			// NOTE: return NON empty, as this is the result of the subparser, so the return
+			// value of this is the actual result of the json_iterate function!
+
+			return new_json_iterate_result_ok(parent);
 		}
 
 		tstr_static tag_name = get_current_tag_name_for_json_iterate_value(value);
@@ -382,6 +407,28 @@ static JsonIterateResult json_value_iterator_process_tagged_unions(const JsonPat
 			return new_json_iterate_result_ok(result);
 		}
 
+		IF_JSON_ITERATE_VALUE_IS_NULL(value) {
+
+			if(member->type.type != TaggedTypeTypeInvalid) {
+				// we have already initialized this
+
+				tstr_static tag_name = tagged_type_type_as_string(member->type.type);
+
+				RETURN_JSON_ITERATE_ERROR_DYNAMIC(
+				    "Error: 'TaggedType' was encountered multiple times: <no more info>",
+				    "Error: 'TaggedType' was encountered multiple times: " TSTR_FMT,
+				    TSTR_STATIC_FMT_ARGS(tag_name));
+			}
+
+			member->type = (TaggedType){ .type = TaggedTypeTypeNull, .data = {} };
+
+			TaggedType* type_slot = &(member->type);
+
+			RTTIAnnotatedValue result = TRTTI_ANNOTATED_VALUE_GET(TaggedType, type_slot);
+
+			return new_json_iterate_result_ok(result);
+		}
+
 		tstr_static tag_name = get_current_tag_name_for_json_iterate_value(value);
 
 		RETURN_JSON_ITERATE_ERROR_DYNAMIC(
@@ -396,7 +443,7 @@ static JsonIterateResult json_value_iterator_process_tagged_unions(const JsonPat
 
 		IF_JSON_ITERATE_VALUE_IS_OBJECT_START(value) {
 
-			if(tagged_type->type != TaggedTypeTypeNull) {
+			if(tagged_type->type != TaggedTypeTypeInvalid) {
 				// we have already initialized this
 
 				tstr_static tag_name = tagged_type_type_as_string(tagged_type->type);
@@ -443,6 +490,47 @@ static JsonIterateResult json_value_iterator_process_tagged_unions(const JsonPat
 				                                  "expected: 'CAnonymousStruct': " TRTTI_FMT,
 				                                  TRTTI_FMT_ARGS(object_entry.entry.value));
 
+			} else if(tstr_eq_static_tstr(object_entry.entry.key, TSTR_STATIC_LIT("name"))) {
+
+				if(TRTTI_ANNOTATED_VALUE_IS(tstr, object_entry.entry.value)) {
+					tstr* string = TRTTI_ANNOTATED_VALUE_CAST(tstr, object_entry.entry.value);
+					if(string == NULL) {
+						return new_json_iterate_result_error((JsonIterateError){
+						    .err = TSTR_LIT(
+						        "implementation error, returned NULL pointer but with content"),
+						    .path = NULL,
+						});
+					}
+
+					if(tagged_type->type != TaggedTypeTypeInvalid) {
+						// we have already initialized this
+
+						tstr_static tag_name = tagged_type_type_as_string(tagged_type->type);
+
+						RETURN_JSON_ITERATE_ERROR_DYNAMIC(
+						    "Error: 'TaggedType' was encountered multiple times: <no more info>",
+						    "Error: 'TaggedType' was encountered multiple times: " TSTR_FMT,
+						    TSTR_STATIC_FMT_ARGS(tag_name));
+					}
+
+					*tagged_type = (TaggedType){ .type = TaggedTypeTypeSimple,
+						                         .data = { .simple_type = {
+						                                       .name = *string,
+						                                   } } };
+
+					TJSON_FREE(string);
+
+					RTTIAnnotatedValue empty = TRTTI_ANNOTATED_VALUE_GET_EMPTY();
+
+					return new_json_iterate_result_ok(empty);
+				}
+
+				RETURN_JSON_ITERATE_ERROR_DYNAMIC("Error: invalid json value for type that "
+				                                  "expected: 'tstr': <no more info>",
+				                                  "Error: invalid json value for type that "
+				                                  "expected: 'tstr': " TRTTI_FMT,
+				                                  TRTTI_FMT_ARGS(object_entry.entry.value));
+
 			} else if(tstr_is_null(object_entry.entry.key)) {
 				return new_json_iterate_result_error((JsonIterateError){
 				    .err = TSTR_LIT("implementation error, the object entry key is <NULL>"),
@@ -465,6 +553,45 @@ static JsonIterateResult json_value_iterator_process_tagged_unions(const JsonPat
 			// value of this is the actual result of the json_iterate function!
 
 			return new_json_iterate_result_ok(parent);
+		}
+
+		IF_JSON_ITERATE_VALUE_IS_STRING_CONST(value) {
+
+			if(tagged_type->type != TaggedTypeTypeInvalid) {
+				// we have already initialized this
+
+				tstr_static tag_name = tagged_type_type_as_string(tagged_type->type);
+
+				RETURN_JSON_ITERATE_ERROR_DYNAMIC(
+				    "Error: 'TaggedType' was encountered multiple times: <no more info>",
+				    "Error: 'TaggedType' was encountered multiple times: " TSTR_FMT,
+				    TSTR_STATIC_FMT_ARGS(tag_name));
+			}
+
+			tstr str_value = json_string_get_as_str(string);
+
+			if(tstr_is_null(&str_value)) {
+				return new_json_iterate_result_error((JsonIterateError){
+				    .err = TSTR_LIT("error in getting tstr from json string"),
+				    .path = NULL,
+				});
+			}
+
+			tstr* str_wrapper = TJSON_NEW(tstr);
+
+			if(str_wrapper == NULL) {
+				tstr_free(&str_value);
+				return new_json_iterate_result_error((JsonIterateError){
+				    .err = TSTR_LIT("OOM"),
+				    .path = NULL,
+				});
+			}
+
+			*str_wrapper = str_value;
+
+			RTTIAnnotatedValue result = TRTTI_ANNOTATED_VALUE_GET(tstr, str_wrapper);
+
+			return new_json_iterate_result_ok(result);
 		}
 
 		tstr_static tag_name = get_current_tag_name_for_json_iterate_value(value);
