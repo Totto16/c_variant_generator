@@ -19,6 +19,9 @@ typedef struct __attribute__((packed)) {
 		Tag TAGE_NAME_IMPL(name_member); \
 	} Name;
 
+#define GET_TAGGED_NAME(Name, name_member, value) \
+	((Name){ .name = (value), .TAGE_NAME_IMPL(name_member) = {} })
+
 DEFINE_TAGGED_NAME(UnionName, union)
 
 DEFINE_TAGGED_NAME(MemberName, member)

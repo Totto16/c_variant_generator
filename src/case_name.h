@@ -26,4 +26,4 @@ NODISCARD const tstr* case_name_get_MACRO_NAME(const CaseName* name);
 
 NODISCARD const tstr* case_name_get_snake_case(const CaseName* name);
 
-void case_name_free(CaseName* name);
+void free_case_name(CaseName* name);

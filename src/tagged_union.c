@@ -33,6 +33,12 @@ TVEC_IMPLEMENT_VEC_TYPE(TaggedMember)
 
 TVEC_IMPLEMENT_VEC_TYPE(StructMember)
 
+typedef struct {
+	CaseName* name;
+} CaseNameWrapper;
+
+TRTTI_DEFINE_TYPE_AS_SUPPORTED(CaseNameWrapper)
+
 #define TAGGED_NAME_NULL(Name, name_member) \
 	((Name){ .name = NULL, .TAGE_NAME_IMPL(name_member) = {} })
 
@@ -136,7 +142,8 @@ static JsonIterateResult json_value_iterator_process_tagged_unions(const JsonPat
 		tstr_static tag_name = get_current_tag_name_for_json_iterate_value(value);
 
 		RETURN_JSON_ITERATE_ERROR_DYNAMIC(
-		    NULL, "Error: unhandled iterate value root path: <no more info>",
+
+		    "Error: unhandled iterate value root path: <no more info>",
 		    "Error: unhandled iterate value in root path: " TSTR_FMT,
 		    TSTR_STATIC_FMT_ARGS(tag_name));
 	}
@@ -166,7 +173,7 @@ static JsonIterateResult json_value_iterator_process_tagged_unions(const JsonPat
 		tstr_static tag_name = get_current_tag_name_for_json_iterate_value(value);
 
 		RETURN_JSON_ITERATE_ERROR_DYNAMIC(
-		    NULL, "Error: unhandled iterate value at 'TaggedUnionArray': <no more info>",
+		    "Error: unhandled iterate value at 'TaggedUnionArray': <no more info>",
 		    "Error: unhandled iterate value at 'TaggedUnionArray': " TSTR_FMT,
 		    TSTR_STATIC_FMT_ARGS(tag_name));
 	}
@@ -192,7 +199,7 @@ static JsonIterateResult json_value_iterator_process_tagged_unions(const JsonPat
 		tstr_static tag_name = get_current_tag_name_for_json_iterate_value(value);
 
 		RETURN_JSON_ITERATE_ERROR_DYNAMIC(
-		    NULL, "Error: unhandled iterate value at 'TaggedUnion': <no more info>",
+		    "Error: unhandled iterate value at 'TaggedUnion': <no more info>",
 		    "Error: unhandled iterate value at 'TaggedUnion': " TSTR_FMT,
 		    TSTR_STATIC_FMT_ARGS(tag_name));
 	}
@@ -222,7 +229,7 @@ static JsonIterateResult json_value_iterator_process_tagged_unions(const JsonPat
 		tstr_static tag_name = get_current_tag_name_for_json_iterate_value(value);
 
 		RETURN_JSON_ITERATE_ERROR_DYNAMIC(
-		    NULL, "Error: unhandled iterate value at 'TaggedMemberArray': <no more info>",
+		    "Error: unhandled iterate value at 'TaggedMemberArray': <no more info>",
 		    "Error: unhandled iterate value at 'TaggedMemberArray': " TSTR_FMT,
 		    TSTR_STATIC_FMT_ARGS(tag_name));
 	}
@@ -245,10 +252,140 @@ static JsonIterateResult json_value_iterator_process_tagged_unions(const JsonPat
 			return new_json_iterate_result_ok(result);
 		}
 
+		IF_JSON_ITERATE_VALUE_IS_OBJECT_ENTRY_CONST(value) {
+
+			if(tstr_eq_static_tstr(object_entry.entry.key, TSTR_STATIC_LIT("type"))) {
+
+				if(TRTTI_ANNOTATED_VALUE_IS(TaggedType, object_entry.entry.value)) {
+
+					// note if we use allocated data and add here here, we could add the data here,
+					// but we
+					// use a struct slot algorithm, so nothing to do here, we could validate the
+					// finished entry if we like
+
+					RTTIAnnotatedValue empty = TRTTI_ANNOTATED_VALUE_GET_EMPTY();
+
+					return new_json_iterate_result_ok(empty);
+				}
+
+				RETURN_JSON_ITERATE_ERROR_DYNAMIC(
+				    "Error: invalid json value for type that expected: 'TaggedType': <no "
+				    "more info>",
+				    "Error: invalid json value for type that expected: "
+				    "'TaggedType': " TRTTI_FMT,
+				    TRTTI_FMT_ARGS(object_entry.entry.value));
+
+			} else if(tstr_eq_static_tstr(object_entry.entry.key, TSTR_STATIC_LIT("name"))) {
+
+				if(TRTTI_ANNOTATED_VALUE_IS(CaseNameWrapper, object_entry.entry.value)) {
+
+					CaseNameWrapper* case_name_wrapper =
+					    TRTTI_ANNOTATED_VALUE_CAST(CaseNameWrapper, object_entry.entry.value);
+					if(case_name_wrapper == NULL) {
+						return new_json_iterate_result_error((JsonIterateError){
+						    .err = TSTR_LIT(
+						        "implementation error, returned NULL pointer but with content"),
+						    .path = NULL,
+						});
+					}
+
+					if(member->name.name != NULL) {
+
+						free_case_name(case_name_wrapper->name);
+						TJSON_FREE(case_name_wrapper);
+						return new_json_iterate_result_error((JsonIterateError){
+						    .err = TSTR_LIT("implementation error, set type_name twice"),
+						    .path = NULL,
+						});
+					}
+
+					member->name = GET_TAGGED_NAME(MemberName, member, case_name_wrapper->name);
+					;
+					TJSON_FREE(case_name_wrapper);
+
+					RTTIAnnotatedValue empty = TRTTI_ANNOTATED_VALUE_GET_EMPTY();
+
+					return new_json_iterate_result_ok(empty);
+				}
+
+				RETURN_JSON_ITERATE_ERROR_DYNAMIC(
+				    "Error: invalid json value for type that expected: 'CaseNameWrapper': <no "
+				    "more info>",
+				    "Error: invalid json value for type that expected: "
+				    "'CaseNameWrapper': " TRTTI_FMT,
+				    TRTTI_FMT_ARGS(object_entry.entry.value));
+
+			}
+
+			else if(tstr_is_null(object_entry.entry.key)) {
+				return new_json_iterate_result_error((JsonIterateError){
+				    .err = TSTR_LIT("implementation error, the object entry key is <NULL>"),
+				    .path = NULL,
+				});
+			}
+
+			RETURN_JSON_ITERATE_ERROR_DYNAMIC(
+			    "Error: unhandled object key at 'TaggedMember': <no more info>",
+			    "Error: unhandled object key at 'TaggedMember': " TSTR_FMT,
+			    TSTR_FMT_ARGS(*object_entry.entry.key));
+		}
+
+		IF_JSON_ITERATE_VALUE_IS_OBJECT_END(value) {
+
+			// NOTE: here we could check some properties of the final result, alias if the type
+			// has all fields set to a valid value
+
+			// NOTE: return NON empty, as this is the result of the subparser, so the return
+			// value of this is the actual result of the json_iterate function!
+
+			return new_json_iterate_result_ok(parent);
+		}
+
+		IF_JSON_ITERATE_VALUE_IS_STRING_CONST(value) {
+
+			tstr str_value = json_string_get_as_str(string);
+
+			if(tstr_is_null(&str_value)) {
+				return new_json_iterate_result_error((JsonIterateError){
+				    .err = TSTR_LIT("error in getting tstr from json string"),
+				    .path = NULL,
+				});
+			}
+			tstr_static case_name_err = TSTR_STATIC_LIT("");
+
+			CaseName* case_name = case_name_from_PascalCase(&str_value, &case_name_err);
+
+			if(case_name == NULL) {
+				RETURN_JSON_ITERATE_ERROR_DYNAMIC_EXTENDED(
+				    NULL, tstr_free(&str_value), "Error: invalid CaseName: <no more info>",
+				    "Error: invalid CaseName: " TSTR_FMT " -> value: " TSTR_FMT,
+				    TSTR_STATIC_FMT_ARGS(case_name_err), TSTR_FMT_ARGS(str_value));
+			}
+
+			tstr_free(&str_value);
+
+			CaseNameWrapper* case_name_wrapper = TJSON_NEW(CaseNameWrapper);
+
+			if(case_name_wrapper == NULL) {
+				free_case_name(case_name);
+				return new_json_iterate_result_error((JsonIterateError){
+				    .err = TSTR_LIT("OOM"),
+				    .path = NULL,
+				});
+			}
+
+			*case_name_wrapper = (CaseNameWrapper){ .name = case_name };
+
+			RTTIAnnotatedValue result =
+			    TRTTI_ANNOTATED_VALUE_GET(CaseNameWrapper, case_name_wrapper);
+
+			return new_json_iterate_result_ok(result);
+		}
+
 		tstr_static tag_name = get_current_tag_name_for_json_iterate_value(value);
 
 		RETURN_JSON_ITERATE_ERROR_DYNAMIC(
-		    NULL, "Error: unhandled iterate value at 'TaggedMember': <no more info>",
+		    "Error: unhandled iterate value at 'TaggedMember': <no more info>",
 		    "Error: unhandled iterate value at 'TaggedMember': " TSTR_FMT,
 		    TSTR_STATIC_FMT_ARGS(tag_name));
 	}
@@ -265,7 +402,7 @@ static JsonIterateResult json_value_iterator_process_tagged_unions(const JsonPat
 				tstr_static tag_name = tagged_type_type_as_string(tagged_type->type);
 
 				RETURN_JSON_ITERATE_ERROR_DYNAMIC(
-				    NULL, "Error: 'TaggedType' was encountered multiple times: <no more info>",
+				    "Error: 'TaggedType' was encountered multiple times: <no more info>",
 				    "Error: 'TaggedType' was encountered multiple times: " TSTR_FMT,
 				    TSTR_STATIC_FMT_ARGS(tag_name));
 			}
@@ -285,11 +422,56 @@ static JsonIterateResult json_value_iterator_process_tagged_unions(const JsonPat
 			return new_json_iterate_result_ok(result);
 		}
 
+		IF_JSON_ITERATE_VALUE_IS_OBJECT_ENTRY_CONST(value) {
+
+			if(tstr_eq_static_tstr(object_entry.entry.key, TSTR_STATIC_LIT("struct"))) {
+
+				if(TRTTI_ANNOTATED_VALUE_IS(CAnonymousStruct, object_entry.entry.value)) {
+
+					// note if we use allocated data and add here here, we could add the data
+					// here, but we use a struct slot algorithm, so nothing to do here, we could
+					// validate the finished entry if we like
+
+					RTTIAnnotatedValue empty = TRTTI_ANNOTATED_VALUE_GET_EMPTY();
+
+					return new_json_iterate_result_ok(empty);
+				}
+
+				RETURN_JSON_ITERATE_ERROR_DYNAMIC("Error: invalid json value for type that "
+				                                  "expected: 'CAnonymousStruct': <no more info>",
+				                                  "Error: invalid json value for type that "
+				                                  "expected: 'CAnonymousStruct': " TRTTI_FMT,
+				                                  TRTTI_FMT_ARGS(object_entry.entry.value));
+
+			} else if(tstr_is_null(object_entry.entry.key)) {
+				return new_json_iterate_result_error((JsonIterateError){
+				    .err = TSTR_LIT("implementation error, the object entry key is <NULL>"),
+				    .path = NULL,
+				});
+			}
+
+			RETURN_JSON_ITERATE_ERROR_DYNAMIC(
+			    "Error: unhandled object key at 'TaggedType': <no more info>",
+			    "Error: unhandled object key at 'TaggedType': " TSTR_FMT,
+			    TSTR_FMT_ARGS(*object_entry.entry.key));
+		}
+
+		IF_JSON_ITERATE_VALUE_IS_OBJECT_END(value) {
+
+			// NOTE: here we could check some properties of the final result, alias if the type
+			// has all fields set to a valid value
+
+			// NOTE: return NON empty, as this is the result of the subparser, so the return
+			// value of this is the actual result of the json_iterate function!
+
+			return new_json_iterate_result_ok(parent);
+		}
+
 		tstr_static tag_name = get_current_tag_name_for_json_iterate_value(value);
 
 		RETURN_JSON_ITERATE_ERROR_DYNAMIC(
-		    NULL, "Error: unhandled iterate value at 'TaggedMember': <no more info>",
-		    "Error: unhandled iterate value at 'TaggedMember': " TSTR_FMT,
+		    "Error: unhandled iterate value at 'TaggedType': <no more info>",
+		    "Error: unhandled iterate value at 'TaggedType': " TSTR_FMT,
 		    TSTR_STATIC_FMT_ARGS(tag_name));
 	}
 
@@ -312,10 +494,55 @@ static JsonIterateResult json_value_iterator_process_tagged_unions(const JsonPat
 			return new_json_iterate_result_ok(result);
 		}
 
+		IF_JSON_ITERATE_VALUE_IS_OBJECT_ENTRY_CONST(value) {
+
+			if(tstr_eq_static_tstr(object_entry.entry.key, TSTR_STATIC_LIT("members"))) {
+
+				if(TRTTI_ANNOTATED_VALUE_IS(StructMemberArray, object_entry.entry.value)) {
+
+					// note if we use allocated data and add here here, we could add the data
+					// here, but we use a struct slot algorithm, so nothing to do here, we could
+					// validate the finished entry if we like
+
+					RTTIAnnotatedValue empty = TRTTI_ANNOTATED_VALUE_GET_EMPTY();
+
+					return new_json_iterate_result_ok(empty);
+				}
+
+				RETURN_JSON_ITERATE_ERROR_DYNAMIC("Error: invalid json value for type that "
+				                                  "expected: 'StructMemberArray': <no more info>",
+				                                  "Error: invalid json value for type that "
+				                                  "expected: 'StructMemberArray': " TRTTI_FMT,
+				                                  TRTTI_FMT_ARGS(object_entry.entry.value));
+
+			} else if(tstr_is_null(object_entry.entry.key)) {
+				return new_json_iterate_result_error((JsonIterateError){
+				    .err = TSTR_LIT("implementation error, the object entry key is <NULL>"),
+				    .path = NULL,
+				});
+			}
+
+			RETURN_JSON_ITERATE_ERROR_DYNAMIC(
+			    "Error: unhandled object key at 'CAnonymousStruct': <no more info>",
+			    "Error: unhandled object key at 'CAnonymousStruct': " TSTR_FMT,
+			    TSTR_FMT_ARGS(*object_entry.entry.key));
+		}
+
+		IF_JSON_ITERATE_VALUE_IS_OBJECT_END(value) {
+
+			// NOTE: here we could check some properties of the final result, alias if the type
+			// has all fields set to a valid value
+
+			// NOTE: return NON empty, as this is the result of the subparser, so the return
+			// value of this is the actual result of the json_iterate function!
+
+			return new_json_iterate_result_ok(parent);
+		}
+
 		tstr_static tag_name = get_current_tag_name_for_json_iterate_value(value);
 
 		RETURN_JSON_ITERATE_ERROR_DYNAMIC(
-		    NULL, "Error: unhandled iterate value at 'CAnonymousStruct': <no more info>",
+		    "Error: unhandled iterate value at 'CAnonymousStruct': <no more info>",
 		    "Error: unhandled iterate value at 'CAnonymousStruct': " TSTR_FMT,
 		    TSTR_STATIC_FMT_ARGS(tag_name));
 	}
@@ -344,9 +571,9 @@ static JsonIterateResult json_value_iterator_process_tagged_unions(const JsonPat
 
 		IF_JSON_ITERATE_VALUE_IS_ARRAY_PUSH_IGN(value) {
 
-			// note if we use allocated data and push here, we could push the data here, but we use
-			// a push slot algorithm, so nothing to do here, we could validate the finished entry if
-			// we like
+			// note if we use allocated data and push here, we could push the data here, but we
+			// use a push slot algorithm, so nothing to do here, we could validate the finished
+			// entry if we like
 
 			RTTIAnnotatedValue empty = TRTTI_ANNOTATED_VALUE_GET_EMPTY();
 
@@ -358,8 +585,8 @@ static JsonIterateResult json_value_iterator_process_tagged_unions(const JsonPat
 			// NOTE: here we could check some properties of the final result, alias if the type
 			// has all fields set to a valid value
 
-			// NOTE: return NON empty, as this is the result of the subparser, so the return value
-			// of this is the actual result of the json_iterate function!
+			// NOTE: return NON empty, as this is the result of the subparser, so the return
+			// value of this is the actual result of the json_iterate function!
 
 			return new_json_iterate_result_ok(parent);
 		}
@@ -367,7 +594,7 @@ static JsonIterateResult json_value_iterator_process_tagged_unions(const JsonPat
 		tstr_static tag_name = get_current_tag_name_for_json_iterate_value(value);
 
 		RETURN_JSON_ITERATE_ERROR_DYNAMIC(
-		    NULL, "Error: unhandled iterate value at 'StructMemberArray': <no more info>",
+		    "Error: unhandled iterate value at 'StructMemberArray': <no more info>",
 		    "Error: unhandled iterate value at 'StructMemberArray': " TSTR_FMT,
 		    TSTR_STATIC_FMT_ARGS(tag_name));
 	}
@@ -437,10 +664,11 @@ static JsonIterateResult json_value_iterator_process_tagged_unions(const JsonPat
 					return new_json_iterate_result_ok(empty);
 				}
 
-				return new_json_iterate_result_error((JsonIterateError){
-				    .err = TSTR_LIT("Error: invalid json value for type that expected: 'tstr'"),
-				    .path = NULL,
-				});
+				RETURN_JSON_ITERATE_ERROR_DYNAMIC(
+				    "Error: invalid json value for type that expected: 'tstr': <no more info>",
+				    "Error: invalid json value for type that expected: 'tstr': " TRTTI_FMT,
+				    TRTTI_FMT_ARGS(object_entry.entry.value));
+
 			} else if(tstr_eq_static_tstr(object_entry.entry.key, TSTR_STATIC_LIT("name"))) {
 
 				if(TRTTI_ANNOTATED_VALUE_IS(tstr, object_entry.entry.value)) {
@@ -472,10 +700,10 @@ static JsonIterateResult json_value_iterator_process_tagged_unions(const JsonPat
 					return new_json_iterate_result_ok(empty);
 				}
 
-				return new_json_iterate_result_error((JsonIterateError){
-				    .err = TSTR_LIT("Error: invalid json value for type that expected: 'tstr'"),
-				    .path = NULL,
-				});
+				RETURN_JSON_ITERATE_ERROR_DYNAMIC(
+				    "Error: invalid json value for type that expected: 'tstr': <no more info>",
+				    "Error: invalid json value for type that expected: 'tstr': " TRTTI_FMT,
+				    TRTTI_FMT_ARGS(object_entry.entry.value));
 			} else if(tstr_is_null(object_entry.entry.key)) {
 				return new_json_iterate_result_error((JsonIterateError){
 				    .err = TSTR_LIT("implementation error, the object entry key is <NULL>"),
@@ -484,18 +712,18 @@ static JsonIterateResult json_value_iterator_process_tagged_unions(const JsonPat
 			}
 
 			RETURN_JSON_ITERATE_ERROR_DYNAMIC(
-			    NULL, "Error: unhandled object key at 'StructMember': <no more info>",
+			    "Error: unhandled object key at 'StructMember': <no more info>",
 			    "Error: unhandled object key at 'StructMember': " TSTR_FMT,
 			    TSTR_FMT_ARGS(*object_entry.entry.key));
 		}
 
 		IF_JSON_ITERATE_VALUE_IS_OBJECT_END(value) {
 
-			// NOTE: here we could check some properties of the final result, alias if the type has
-			// all fields set to a valid value
+			// NOTE: here we could check some properties of the final result, alias if the type
+			// has all fields set to a valid value
 
-			// NOTE: return NON empty, as this is the toplevel/sub parser, so the return value of
-			// this is the actual result of the json_iterate function!
+			// NOTE: return NON empty, as this is the toplevel/sub parser, so the return value
+			// of this is the actual result of the json_iterate function!
 
 			return new_json_iterate_result_ok(parent);
 		}
@@ -503,17 +731,17 @@ static JsonIterateResult json_value_iterator_process_tagged_unions(const JsonPat
 		tstr_static tag_name = get_current_tag_name_for_json_iterate_value(value);
 
 		RETURN_JSON_ITERATE_ERROR_DYNAMIC(
-		    NULL, "Error: unhandled iterate value at 'StructMember': <no more info>",
+		    "Error: unhandled iterate value at 'StructMember': <no more info>",
 		    "Error: unhandled iterate value at 'StructMember': " TSTR_FMT,
 		    TSTR_STATIC_FMT_ARGS(tag_name));
 	}
 
 	tstr_static tag_name = get_current_tag_name_for_json_iterate_value(value);
 
-	RETURN_JSON_ITERATE_ERROR_DYNAMIC(
-	    NULL, "Error: unhandled iterate value: <no more info>",
-	    "Error: unhandled iterate value: " TSTR_FMT " on rtti: " TRTTI_TYPE_NAME_FMT,
-	    TSTR_STATIC_FMT_ARGS(tag_name), TRTTI_TYPE_NAME_FMT_ARGS(parent.type.name));
+	RETURN_JSON_ITERATE_ERROR_DYNAMIC("Error: unhandled iterate value: <no more info>",
+	                                  "Error: unhandled iterate value: " TSTR_FMT
+	                                  " on rtti: " TRTTI_FMT,
+	                                  TSTR_STATIC_FMT_ARGS(tag_name), TRTTI_FMT_ARGS(parent));
 }
 
 static void free_tagged_type(TaggedType* tagged_type);
@@ -576,10 +804,9 @@ static void json_value_iterator_free_tagged_unions(RTTIAnnotatedValue data) {
 	// TODO: StructMember
 	// TODO: StructMemberArray
 
-	color_fprintf(stderr,
-	              COLOR_RED "ERROR: don't know how to free: " COLOR_YELLOW TRTTI_TYPE_NAME_FMT
-	                        "\n" COLOR_RESET,
-	              TRTTI_TYPE_NAME_FMT_ARGS(data.type.name));
+	color_fprintf(
+	    stderr, COLOR_RED "ERROR: don't know how to free: " COLOR_YELLOW TRTTI_FMT "\n" COLOR_RESET,
+	    TRTTI_FMT_ARGS(data));
 }
 
 NODISCARD static bool file_exists(const tstr* const input_file) {

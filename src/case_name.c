@@ -389,7 +389,7 @@ NODISCARD const tstr* case_name_get_snake_case(const CaseName* name) {
 	return result;
 }
 
-void case_name_free(CaseName* name) {
+void free_case_name(CaseName* name) {
 	if(name == NULL) {
 		return;
 	}
