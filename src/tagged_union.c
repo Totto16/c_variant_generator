@@ -32,6 +32,8 @@ TRTTI_DEFINE_TYPE_AS_SUPPORTED(TaggedUnionEnum)
 
 TRTTI_DEFINE_TYPE_AS_SUPPORTED(TaggedUnionOptions)
 
+TRTTI_DEFINE_TYPE_AS_SUPPORTED(TaggedUnionRequirements)
+
 TVEC_IMPLEMENT_VEC_TYPE(TaggedUnion)
 
 TVEC_IMPLEMENT_VEC_TYPE(TaggedMember)
@@ -335,9 +337,29 @@ static JsonIterateResult json_value_iterator_process_tagged_unions(const JsonPat
 
 				RETURN_JSON_ITERATE_ERROR_DYNAMIC("Error: invalid json value for type that "
 				                                  "expected: "
-				                                  "'" TRTTI_CURRENT_VALUE "': <no more info>",
+				                                  "'TaggedMemberArray': <no more info>",
 				                                  "Error: invalid json value for type that "
-				                                  "expected: '" TRTTI_CURRENT_VALUE "': " TRTTI_FMT,
+				                                  "expected: 'TaggedMemberArray': " TRTTI_FMT,
+				                                  TRTTI_FMT_ARGS(object_entry.entry.value));
+
+			} else if(tstr_eq_static_tstr(object_entry.entry.key, TSTR_STATIC_LIT("options"))) {
+
+				if(TRTTI_ANNOTATED_VALUE_IS(TaggedUnionOptions, object_entry.entry.value)) {
+
+					// note if we use allocated data and add here here, we could add the data
+					// here, but we use a struct slot algorithm, so nothing to do here, we could
+					// validate the finished entry if we like
+
+					RTTIAnnotatedValue empty = TRTTI_ANNOTATED_VALUE_GET_EMPTY();
+
+					return new_json_iterate_result_ok(empty);
+				}
+
+				RETURN_JSON_ITERATE_ERROR_DYNAMIC("Error: invalid json value for type that "
+				                                  "expected: "
+				                                  "'TaggedUnionOptions': <no more info>",
+				                                  "Error: invalid json value for type that "
+				                                  "expected: 'TaggedUnionOptions': " TRTTI_FMT,
 				                                  TRTTI_FMT_ARGS(object_entry.entry.value));
 
 			} else if(tstr_is_null(object_entry.entry.key)) {
@@ -1129,14 +1151,45 @@ static JsonIterateResult json_value_iterator_process_tagged_unions(const JsonPat
 
 		IF_JSON_ITERATE_VALUE_IS_OBJECT_START(value) {
 
-			// TODO: segment check
+			JsonPathSegmentRef* segment_ref = json_path_get_last_segment(path);
 
-			// TODO: no initilizec check necessary
+			if(segment_ref == NULL) {
+				return new_json_iterate_result_error((JsonIterateError){
+				    .err = TSTR_LIT("implementation error, couldn't get last segment at "
+				                    "'" TRTTI_CURRENT_VALUE "'"),
+				    .path = NULL,
+				});
+			}
 
-			// NOTE: this is a no-op, as we already have the slot we need, just pass the parent
-			// again
+			// TODO
+			//  can be "requirements" or ... TODO
+			if(json_path_segment_is_object_key_view(segment_ref, TSTR_VIEW_LIT("requirements"))) {
+				free_json_path_segment_ref(segment_ref);
 
-			return new_json_iterate_result_ok(parent);
+				// TODO: assert that its not a duplicate, e.g. that requirements is empty
+
+				union_options->requirements = TAGGED_UNION_REQUIREMENTS_NULL();
+
+				TaggedUnionRequirements* requirements_slot = &(union_options->requirements);
+
+				RTTIAnnotatedValue result =
+				    TRTTI_ANNOTATED_VALUE_GET(TaggedUnionRequirements, requirements_slot);
+
+				return new_json_iterate_result_ok(result);
+
+			} else {
+
+				free_json_path_segment_ref(segment_ref);
+
+				tstr_static tag_name = get_current_tag_name_for_json_iterate_value(value);
+
+				RETURN_JSON_ITERATE_ERROR_DYNAMIC(
+				    "Error: implementation error, incorrect segment at '" TRTTI_CURRENT_VALUE
+				    "': <no more info>",
+				    "Error: implementation error, incorrect segment at '" TRTTI_CURRENT_VALUE
+				    "': tag " TSTR_FMT,
+				    TSTR_STATIC_FMT_ARGS(tag_name));
+			}
 		}
 
 		IF_JSON_ITERATE_VALUE_IS_STRING_CONST(value) {
@@ -1169,8 +1222,184 @@ static JsonIterateResult json_value_iterator_process_tagged_unions(const JsonPat
 			return new_json_iterate_result_ok(result);
 		}
 
-		// TODO:remove
-		UNUSED(union_options);
+		IF_JSON_ITERATE_VALUE_IS_OBJECT_ENTRY_CONST(value) {
+
+			// TODO: segment check (parent keys, are in object_entry)
+
+			if(tstr_eq_static_tstr(object_entry.entry.key, TSTR_STATIC_LIT("requirements"))) {
+
+				if(TRTTI_ANNOTATED_VALUE_IS(TaggedUnionRequirements, object_entry.entry.value)) {
+					// TODO: initilized check
+
+					// note if we use allocated data and add here here, we could add the data here,
+					// but we
+					// use a struct slot algorithm, so nothing to do here, we could validate the
+					// finished entry if we like
+
+					RTTIAnnotatedValue empty = TRTTI_ANNOTATED_VALUE_GET_EMPTY();
+
+					return new_json_iterate_result_ok(empty);
+				}
+
+				RETURN_JSON_ITERATE_ERROR_DYNAMIC(
+				    "Error: invalid json value for type that "
+				    "expected: 'TaggedUnionRequirements': <no more info>",
+				    "Error: invalid json value for type that "
+				    "expected: 'TaggedUnionRequirements': " TRTTI_FMT,
+				    TRTTI_FMT_ARGS(object_entry.entry.value));
+
+			} else if(tstr_is_null(object_entry.entry.key)) {
+				return new_json_iterate_result_error((JsonIterateError){
+				    .err = TSTR_LIT("implementation error, the object entry key is <NULL> in "
+				                    "'" TRTTI_CURRENT_VALUE "'"),
+				    .path = NULL,
+				});
+			}
+
+			RETURN_JSON_ITERATE_ERROR_DYNAMIC(
+			    "Error: unhandled object key at '" TRTTI_CURRENT_VALUE "': <no more info>",
+			    "Error: unhandled object key at '" TRTTI_CURRENT_VALUE "': " TSTR_FMT,
+			    TSTR_FMT_ARGS(*object_entry.entry.key));
+		}
+
+		IF_JSON_ITERATE_VALUE_IS_OBJECT_END(value) {
+
+			// TODO. check that all subkeys are initilized
+
+			// TODO: segment check
+
+			// NOTE: here we could check some properties of the final result, alias if the type
+			// has all fields set to a valid value
+
+			// NOTE: return NON empty, as this is the result of the subparser, so the return
+			// value of this is the actual result of the json_iterate function!
+
+			return new_json_iterate_result_ok(parent);
+		}
+
+		tstr_static tag_name = get_current_tag_name_for_json_iterate_value(value);
+
+		RETURN_JSON_ITERATE_ERROR_DYNAMIC(
+		    "Error: unhandled iterate value at '" TRTTI_CURRENT_VALUE "': <no more info>",
+		    "Error: unhandled iterate value at '" TRTTI_CURRENT_VALUE "': " TSTR_FMT,
+		    TSTR_STATIC_FMT_ARGS(tag_name));
+	}
+#undef TRTTI_CURRENT_VALUE
+
+	if(TRTTI_ANNOTATED_VALUE_IS(TaggedUnionRequirements, parent)) {
+#define TRTTI_CURRENT_VALUE "TaggedUnionRequirements"
+
+		TaggedUnionRequirements* requirements =
+		    TRTTI_ANNOTATED_VALUE_CAST(TaggedUnionRequirements, parent);
+
+		IF_JSON_ITERATE_VALUE_IS_STRING_CONST(value) {
+
+			// TODO: note no segment check necessary
+
+			tstr str_value = json_string_get_as_str(string);
+
+			if(tstr_is_null(&str_value)) {
+				return new_json_iterate_result_error((JsonIterateError){
+				    .err = TSTR_LIT("error in getting tstr from json string"),
+				    .path = NULL,
+				});
+			}
+
+			tstr* str_wrapper = TJSON_NEW(tstr);
+
+			if(str_wrapper == NULL) {
+				tstr_free(&str_value);
+				return new_json_iterate_result_error((JsonIterateError){
+				    .err = TSTR_LIT("OOM"),
+				    .path = NULL,
+				});
+			}
+
+			*str_wrapper = str_value;
+
+			RTTIAnnotatedValue result = TRTTI_ANNOTATED_VALUE_GET(tstr, str_wrapper);
+
+			return new_json_iterate_result_ok(result);
+		}
+
+		IF_JSON_ITERATE_VALUE_IS_OBJECT_ENTRY_CONST(value) {
+
+			// TODO: segment check (parent keys, are in object_entry)
+
+			if(tstr_eq_static_tstr(object_entry.entry.key, TSTR_STATIC_LIT("order"))) {
+
+				if(TRTTI_ANNOTATED_VALUE_IS(tstr, object_entry.entry.value)) {
+					tstr* string = TRTTI_ANNOTATED_VALUE_CAST(tstr, object_entry.entry.value);
+					if(string == NULL) {
+						return new_json_iterate_result_error((JsonIterateError){
+						    .err = TSTR_LIT(
+						        "implementation error, returned NULL pointer but with content"),
+						    .path = NULL,
+						});
+					}
+
+					tstr local_string = *string;
+					TJSON_FREE(string);
+
+					// TODO: check for intialized
+
+					if(tstr_eq_static_tstr(&local_string, TSTR_STATIC_LIT("best_size"))) {
+
+						requirements->order = StructOrderRequirementBestSize;
+					} else if(tstr_eq_static_tstr(&local_string,
+					                              TSTR_STATIC_LIT("aligned_access"))) {
+
+						requirements->order = StructOrderRequirementAlignedAccess;
+
+					} else {
+						RETURN_JSON_ITERATE_ERROR_DYNAMIC_EXTENDED(
+						    NULL, tstr_free(&local_string),
+						    "Error: invalid StructOrderRequirement: <no more info>",
+						    "Error: invalid StructOrderRequirement: " TSTR_FMT,
+						    TSTR_FMT_ARGS(local_string));
+					}
+
+					tstr_free(&local_string);
+
+					RTTIAnnotatedValue empty = TRTTI_ANNOTATED_VALUE_GET_EMPTY();
+
+					return new_json_iterate_result_ok(empty);
+				}
+
+				RETURN_JSON_ITERATE_ERROR_DYNAMIC("Error: invalid json value for type that "
+				                                  "expected: 'tstr': <no more info>",
+				                                  "Error: invalid json value for type that "
+				                                  "expected: 'tstr': " TRTTI_FMT,
+				                                  TRTTI_FMT_ARGS(object_entry.entry.value));
+
+			} else if(tstr_is_null(object_entry.entry.key)) {
+				return new_json_iterate_result_error((JsonIterateError){
+				    .err = TSTR_LIT("implementation error, the object entry key is <NULL> in "
+				                    "'" TRTTI_CURRENT_VALUE "'"),
+				    .path = NULL,
+				});
+			}
+
+			RETURN_JSON_ITERATE_ERROR_DYNAMIC(
+			    "Error: unhandled object key at '" TRTTI_CURRENT_VALUE "': <no more info>",
+			    "Error: unhandled object key at '" TRTTI_CURRENT_VALUE "': " TSTR_FMT,
+			    TSTR_FMT_ARGS(*object_entry.entry.key));
+		}
+
+		IF_JSON_ITERATE_VALUE_IS_OBJECT_END(value) {
+
+			// TODO. check that all subkeys are initilized
+
+			// TODO: segment check
+
+			// NOTE: here we could check some properties of the final result, alias if the type
+			// has all fields set to a valid value
+
+			// NOTE: return NON empty, as this is the result of the subparser, so the return
+			// value of this is the actual result of the json_iterate function!
+
+			return new_json_iterate_result_ok(parent);
+		}
 
 		tstr_static tag_name = get_current_tag_name_for_json_iterate_value(value);
 
@@ -1185,7 +1414,7 @@ static JsonIterateResult json_value_iterator_process_tagged_unions(const JsonPat
 
 	RETURN_JSON_ITERATE_ERROR_DYNAMIC("Error: unhandled iterate value: <no more info>",
 	                                  "Error: unhandled iterate value: " TSTR_FMT
-	                                  " on rtti: " TRTTI_FMT,
+	                                  " with type: " TRTTI_FMT,
 	                                  TSTR_STATIC_FMT_ARGS(tag_name), TRTTI_FMT_ARGS(parent));
 }
 
