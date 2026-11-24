@@ -1,7 +1,7 @@
 
 #include "./tagged_union.h"
-#include "./colored_fprintf.h"
 #include "./json.h"
+#include <tcolored_cio/fprintf.h>
 
 #include <tjson.h>
 #include <tjson_helper.h>
@@ -1053,7 +1053,7 @@ static void json_value_iterator_free_tagged_unions(RTTIAnnotatedValue data) {
 	// TODO: at the end this should exit(1)
 	//  but for debugging it is fine
 
-	color_fprintf(
+	tcolored_cio_fprintf(
 	    stderr, COLOR_RED "ERROR: don't know how to free: " COLOR_YELLOW TRTTI_FMT "\n" COLOR_RESET,
 	    TRTTI_FMT_ARGS(data));
 }
@@ -1074,9 +1074,9 @@ NODISCARD static bool file_exists(const tstr* const input_file) {
 NODISCARD tstr_static get_tagged_unions(const tstr* const input_file, TaggedUnionArray* array) {
 
 	if(!file_exists(input_file)) {
-		color_fprintf(stderr,
-		              COLOR_RED "File does not exist: " COLOR_YELLOW TSTR_FMT "\n" COLOR_RESET,
-		              TSTR_FMT_ARGS(*input_file));
+		tcolored_cio_fprintf(
+		    stderr, COLOR_RED "File does not exist: " COLOR_YELLOW TSTR_FMT "\n" COLOR_RESET,
+		    TSTR_FMT_ARGS(*input_file));
 		return TSTR_STATIC_LIT("file does not exist");
 	}
 
@@ -1087,12 +1087,13 @@ NODISCARD tstr_static get_tagged_unions(const tstr* const input_file, TaggedUnio
 		tstr error_str = json_format_error(error);
 
 		if(tstr_is_null(&error_str)) {
-			color_fprintf(stderr, COLOR_RED "File parse error: <unknown>\n" COLOR_RESET);
+			tcolored_cio_fprintf(stderr, COLOR_RED "File parse error: <unknown>\n" COLOR_RESET);
 			return TSTR_STATIC_LIT("file parse error");
 		}
 
-		color_fprintf(stderr, COLOR_RED "File parse error: " COLOR_YELLOW TSTR_FMT "\n" COLOR_RESET,
-		              TSTR_FMT_ARGS(error_str));
+		tcolored_cio_fprintf(stderr,
+		                     COLOR_RED "File parse error: " COLOR_YELLOW TSTR_FMT "\n" COLOR_RESET,
+		                     TSTR_FMT_ARGS(error_str));
 		tstr_free(&error_str);
 		return TSTR_STATIC_LIT("file parse error");
 	}
@@ -1112,8 +1113,9 @@ NODISCARD tstr_static get_tagged_unions(const tstr* const input_file, TaggedUnio
 
 	if(!tstr_is_null(&json_schema_error)) {
 
-		color_fprintf(stderr, COLOR_RED "Schema error: " COLOR_YELLOW TSTR_FMT "\n" COLOR_RESET,
-		              TSTR_FMT_ARGS(json_schema_error));
+		tcolored_cio_fprintf(stderr,
+		                     COLOR_RED "Schema error: " COLOR_YELLOW TSTR_FMT "\n" COLOR_RESET,
+		                     TSTR_FMT_ARGS(json_schema_error));
 		tstr_free(&json_schema_error);
 		FREE_AT_END();
 		return TSTR_STATIC_LIT("input file not correct schema");
@@ -1139,17 +1141,17 @@ NODISCARD tstr_static get_tagged_unions(const tstr* const input_file, TaggedUnio
 		tstr err_str = json_iterate_error_to_str(&(error->error));
 
 		if(tstr_is_null(&err_str)) {
-			color_fprintf(stderr,
-			              COLOR_RED "Json data get error: " COLOR_YELLOW "<unknown>\n" COLOR_RESET);
+			tcolored_cio_fprintf(stderr, COLOR_RED "Json data get error: " COLOR_YELLOW
+			                                       "<unknown>\n" COLOR_RESET);
 
 			free_json_iterate_error(&(error->error));
 			FREE_AT_END();
 			return TSTR_STATIC_LIT("input file getting after schema check failed");
 		}
 
-		color_fprintf(stderr,
-		              COLOR_RED "Json data get error: " COLOR_YELLOW TSTR_FMT "\n" COLOR_RESET,
-		              TSTR_FMT_ARGS(err_str));
+		tcolored_cio_fprintf(
+		    stderr, COLOR_RED "Json data get error: " COLOR_YELLOW TSTR_FMT "\n" COLOR_RESET,
+		    TSTR_FMT_ARGS(err_str));
 
 		tstr_free(&err_str);
 		free_json_iterate_error(&(error->error));

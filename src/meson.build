@@ -1,8 +1,6 @@
 src_files += files(
     'case_name.c',
     'case_name.h',
-    'colored_fprintf.c',
-    'colored_fprintf.h',
     'generate.c',
     'generate.h',
     'json.c',

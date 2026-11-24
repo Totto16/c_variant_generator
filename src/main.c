@@ -7,10 +7,10 @@
 
 #include <tstr.h>
 
-#include "./colored_fprintf.h"
 #include "./generate.h"
 #include "./json.h"
 #include "./utils.h"
+#include <tcolored_cio/fprintf.h>
 
 #define IDENT1 "\t"
 #define IDENT2 IDENT1 IDENT1
@@ -18,26 +18,26 @@
 // prints the usage, if argc is not the right amount!
 static void print_usage(FILE* stream, const tstr_static program_name) {
 
-	color_fprintf(stream,
-	              COLOR_CYAN "usage: " COLOR_GREEN TSTR_FMT COLOR_YELLOW " <options>\n" COLOR_RESET,
-	              TSTR_STATIC_FMT_ARGS(program_name));
+	tcolored_cio_fprintf(
+	    stream, COLOR_CYAN "usage: " COLOR_GREEN TSTR_FMT COLOR_YELLOW " <options>\n" COLOR_RESET,
+	    TSTR_STATIC_FMT_ARGS(program_name));
 
-	color_fprintf(stream, IDENT1 COLOR_CYAN "options:\n" COLOR_RESET);
-	color_fprintf(stream, IDENT2 COLOR_CYAN
-	              "-i, --input " COLOR_YELLOW "<input>" COLOR_CYAN ":" COLOR_WHITE
-	              " the input file in json format " COLOR_PURPLE "(required)\n" COLOR_RESET);
-	color_fprintf(stream, IDENT2 COLOR_CYAN "-o, --output " COLOR_YELLOW "<output>" COLOR_CYAN
-	                                        ":" COLOR_WHITE " the output file " COLOR_PURPLE
-	                                        "(required)\n" COLOR_RESET);
-	color_fprintf(stream, IDENT1 COLOR_CYAN "other:\n" COLOR_RESET);
-	color_fprintf(stream, IDENT2 COLOR_CYAN "-h, -?, --help:" COLOR_WHITE
-	                                        " print the help / usage\n" COLOR_RESET);
-	color_fprintf(stream, IDENT2 COLOR_CYAN "-v, --version:" COLOR_WHITE
-	                                        " print the version\n" COLOR_RESET);
-	color_fprintf(stream, IDENT2 COLOR_CYAN
-	              "-g, -p, --get-schema, --print-schema, --variant-json-schema:" COLOR_WHITE
-	              " print the "
-	              "schema for the input json file\n" COLOR_RESET);
+	tcolored_cio_fprintf(stream, IDENT1 COLOR_CYAN "options:\n" COLOR_RESET);
+	tcolored_cio_fprintf(stream, IDENT2 COLOR_CYAN
+	                     "-i, --input " COLOR_YELLOW "<input>" COLOR_CYAN ":" COLOR_WHITE
+	                     " the input file in json format " COLOR_PURPLE "(required)\n" COLOR_RESET);
+	tcolored_cio_fprintf(stream, IDENT2 COLOR_CYAN
+	                     "-o, --output " COLOR_YELLOW "<output>" COLOR_CYAN ":" COLOR_WHITE
+	                     " the output file " COLOR_PURPLE "(required)\n" COLOR_RESET);
+	tcolored_cio_fprintf(stream, IDENT1 COLOR_CYAN "other:\n" COLOR_RESET);
+	tcolored_cio_fprintf(stream, IDENT2 COLOR_CYAN "-h, -?, --help:" COLOR_WHITE
+	                                               " print the help / usage\n" COLOR_RESET);
+	tcolored_cio_fprintf(stream, IDENT2 COLOR_CYAN "-v, --version:" COLOR_WHITE
+	                                               " print the version\n" COLOR_RESET);
+	tcolored_cio_fprintf(stream, IDENT2 COLOR_CYAN
+	                     "-g, -p, --get-schema, --print-schema, --variant-json-schema:" COLOR_WHITE
+	                     " print the "
+	                     "schema for the input json file\n" COLOR_RESET);
 }
 
 NODISCARD static bool is_help_string(const tstr_static str) {
@@ -126,7 +126,8 @@ NODISCARD static tstr generate_json_schema(void) {
 
 static ExitCode rich_main(const ProgramArgs args) {
 	if(args.size < 1) {
-		color_fprintf(stderr, COLOR_RED "No program name specified: FATAL ERROR\n" COLOR_RESET);
+		tcolored_cio_fprintf(stderr,
+		                     COLOR_RED "No program name specified: FATAL ERROR\n" COLOR_RESET);
 		return ExitCodeFailure;
 	}
 
@@ -153,7 +154,8 @@ static ExitCode rich_main(const ProgramArgs args) {
 		if(is_schema_print(arg)) {
 			tstr schema_as_string = generate_json_schema();
 			if(tstr_is_null(&schema_as_string)) {
-				color_fprintf(stderr, COLOR_RED "failed to get schema as string\n" COLOR_RESET);
+				tcolored_cio_fprintf(stderr,
+				                     COLOR_RED "failed to get schema as string\n" COLOR_RESET);
 				return ExitCodeFailure;
 			}
 			printf(TSTR_FMT "\n", TSTR_FMT_ARGS(schema_as_string));
@@ -166,8 +168,9 @@ static ExitCode rich_main(const ProgramArgs args) {
 		   tstr_static_eq(arg, TSTR_STATIC_LIT("--output"))) {
 
 			if(i + 1 >= args.size) {
-				color_fprintf(stderr, COLOR_RED
-				              "Expected another argument for the output argument\n" COLOR_RESET);
+				tcolored_cio_fprintf(
+				    stderr,
+				    COLOR_RED "Expected another argument for the output argument\n" COLOR_RESET);
 				print_usage(stderr, program_name);
 				return ExitCodeFailure;
 			}
@@ -175,7 +178,7 @@ static ExitCode rich_main(const ProgramArgs args) {
 			const tstr_static value2 = PROGRAM_ARGS_AT(args, i + 1);
 
 			if(!tstr_static_is_null(output)) {
-				color_fprintf(stderr, COLOR_RED "Output argument given twice\n" COLOR_RESET);
+				tcolored_cio_fprintf(stderr, COLOR_RED "Output argument given twice\n" COLOR_RESET);
 				print_usage(stderr, program_name);
 				return ExitCodeFailure;
 			}
@@ -189,8 +192,9 @@ static ExitCode rich_main(const ProgramArgs args) {
 		   tstr_static_eq(arg, TSTR_STATIC_LIT("--input"))) {
 
 			if(i + 1 >= args.size) {
-				color_fprintf(stderr, COLOR_RED
-				              "Expected another argument for the input argument\n" COLOR_RESET);
+				tcolored_cio_fprintf(
+				    stderr,
+				    COLOR_RED "Expected another argument for the input argument\n" COLOR_RESET);
 				print_usage(stderr, program_name);
 				return ExitCodeFailure;
 			}
@@ -198,7 +202,7 @@ static ExitCode rich_main(const ProgramArgs args) {
 			const tstr_static value2 = PROGRAM_ARGS_AT(args, i + 1);
 
 			if(!tstr_static_is_null(input)) {
-				color_fprintf(stderr, COLOR_RED "Input argument given twice\n" COLOR_RESET);
+				tcolored_cio_fprintf(stderr, COLOR_RED "Input argument given twice\n" COLOR_RESET);
 				print_usage(stderr, program_name);
 				return ExitCodeFailure;
 			}
@@ -208,21 +212,21 @@ static ExitCode rich_main(const ProgramArgs args) {
 			continue;
 		}
 
-		color_fprintf(stderr,
-		              COLOR_RED "Unrecognized argument: " COLOR_YELLOW TSTR_FMT "\n" COLOR_RESET,
-		              TSTR_STATIC_FMT_ARGS(arg));
+		tcolored_cio_fprintf(
+		    stderr, COLOR_RED "Unrecognized argument: " COLOR_YELLOW TSTR_FMT "\n" COLOR_RESET,
+		    TSTR_STATIC_FMT_ARGS(arg));
 		print_usage(stderr, program_name);
 		return ExitCodeFailure;
 	}
 
 	if(tstr_static_is_null(input)) {
-		color_fprintf(stderr, COLOR_RED "No input given\n" COLOR_RESET);
+		tcolored_cio_fprintf(stderr, COLOR_RED "No input given\n" COLOR_RESET);
 		print_usage(stderr, program_name);
 		return ExitCodeFailure;
 	}
 
 	if(tstr_static_is_null(output)) {
-		color_fprintf(stderr, COLOR_RED "No output given\n" COLOR_RESET);
+		tcolored_cio_fprintf(stderr, COLOR_RED "No output given\n" COLOR_RESET);
 		print_usage(stderr, program_name);
 		return ExitCodeFailure;
 	}
