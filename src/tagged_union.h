@@ -55,7 +55,6 @@ typedef enum C_23_NARROW_ENUM_TO(uint8_t) {
 	TaggedTypeTypeNull = 0,
 	TaggedTypeTypeSimple,
 	TaggedTypeTypeStruct,
-	TaggedTypeTypeInvalid,
 } TaggedTypeType;
 
 NODISCARD tstr_static tagged_type_type_as_string(TaggedTypeType type);
