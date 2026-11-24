@@ -54,6 +54,12 @@ deps += dependency(
     version: ['>=1.0.0', '<2'],
 )
 
+deps += dependency(
+    'trtti',
+    allow_fallback: true,
+    version: ['>=1.0.0', '<2'],
+)
+
 cc = meson.get_compiler('c')
 
 deps += cc.find_library(

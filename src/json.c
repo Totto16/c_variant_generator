@@ -8,7 +8,8 @@ NODISCARD JsonSchema get_json_schema_for_input(void) {
 	tstr_static add_result = json_schema_string_set_nonempty(ParsedNamePascalCaseZ);
 	ASSERT(tstr_static_is_null(add_result));
 
-	JsonSchemaRegexResult ParsedNamePascalCaseZRegex = json_schema_regex_get("^[A-Z][a-zA-Z0-9]*$");
+	JsonSchemaRegexResult ParsedNamePascalCaseZRegex =
+	    json_schema_regex_get_view(TSTR_VIEW_LIT("^[A-Z][a-zA-Z0-9]*$"));
 	ASSERT(get_current_tag_type_for_json_schema_regex_result(ParsedNamePascalCaseZRegex) ==
 	       JsonSchemaRegexResultTypeOk);
 
@@ -21,7 +22,7 @@ NODISCARD JsonSchema get_json_schema_for_input(void) {
 	ASSERT(tstr_static_is_null(add_result));
 
 	JsonSchemaRegexResult ParsedNameFromPartsZItemsRegex =
-	    json_schema_regex_get("^([A-Z0-9]*)|([a-z0-9]*)$");
+	    json_schema_regex_get_view(TSTR_VIEW_LIT("^([A-Z0-9]*)|([a-z0-9]*)$"));
 	ASSERT(get_current_tag_type_for_json_schema_regex_result(ParsedNamePascalCaseZRegex) ==
 	       JsonSchemaRegexResultTypeOk);
 
