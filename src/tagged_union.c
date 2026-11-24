@@ -5,6 +5,7 @@
 
 #include <tjson.h>
 #include <tjson_helper.h>
+#include <trtti.h>
 
 #include <fcntl.h>
 #include <unistd.h>
@@ -26,6 +27,10 @@ TRTTI_DEFINE_TYPE_AS_SUPPORTED(StructMemberArray)
 TRTTI_DEFINE_TYPE_AS_SUPPORTED(StructMember)
 
 TRTTI_DEFINE_TYPE_AS_SUPPORTED(tstr)
+
+TRTTI_DEFINE_TYPE_AS_SUPPORTED(TaggedUnionEnum)
+
+TRTTI_DEFINE_TYPE_AS_SUPPORTED(TaggedUnionOptions)
 
 TVEC_IMPLEMENT_VEC_TYPE(TaggedUnion)
 
@@ -187,7 +192,27 @@ static JsonIterateResult json_value_iterator_process_tagged_unions(const JsonPat
 
 		IF_JSON_ITERATE_VALUE_IS_ARRAY_START(value) {
 
-			// TODO: assert that the key is "member"
+			JsonPathSegmentRef* segment_ref = json_path_get_last_segment(path);
+
+			if(segment_ref == NULL) {
+				return new_json_iterate_result_error((JsonIterateError){
+				    .err = TSTR_LIT("implementation error, couldn't get last segment"),
+				    .path = NULL,
+				});
+			}
+
+			const bool is_correct_key =
+			    json_path_segment_is_object_key_view(segment_ref, TSTR_VIEW_LIT_CONST("member"));
+			free_json_path_segment_ref(segment_ref);
+
+			if(!is_correct_key) {
+				return new_json_iterate_result_error((JsonIterateError){
+				    .err = TSTR_LIT(
+				        "implementation error, got invalid key at 'TaggedUnion' array_start"),
+				    .path = NULL,
+				});
+			}
+
 			// TODO: assert that its not a duplicate, e.g. that member is empty (empty array)
 
 			tagged_union->member = TVEC_EMPTY(TaggedMember);
@@ -197,6 +222,100 @@ static JsonIterateResult json_value_iterator_process_tagged_unions(const JsonPat
 			RTTIAnnotatedValue result = TRTTI_ANNOTATED_VALUE_GET(TaggedMemberArray, member_slot);
 
 			return new_json_iterate_result_ok(result);
+		}
+
+		IF_JSON_ITERATE_VALUE_IS_OBJECT_START(value) {
+
+			JsonPathSegmentRef* segment_ref = json_path_get_last_segment(path);
+
+			if(segment_ref == NULL) {
+				return new_json_iterate_result_error((JsonIterateError){
+				    .err = TSTR_LIT("implementation error, couldn't get last segment"),
+				    .path = NULL,
+				});
+			}
+
+			// can be "enum" or "options"
+			if(json_path_segment_is_object_key_view(segment_ref, TSTR_VIEW_LIT("enum"))) {
+				free_json_path_segment_ref(segment_ref);
+
+				// TODO: assert that its not a duplicate, e.g. that enum is empty
+
+				tagged_union->enum_props = TAGGED_UNION_ENUM_NULL();
+
+				TaggedUnionEnum* enum_slot = &(tagged_union->enum_props);
+
+				RTTIAnnotatedValue result = TRTTI_ANNOTATED_VALUE_GET(TaggedUnionEnum, enum_slot);
+
+				return new_json_iterate_result_ok(result);
+
+			} else if(json_path_segment_is_object_key_view(segment_ref, TSTR_VIEW_LIT("options"))) {
+				free_json_path_segment_ref(segment_ref);
+
+				// TODO: assert that its not a duplicate, e.g. that options is empty
+
+				tagged_union->options = TAGGED_UNION_OPTIONS_NULL();
+
+				TaggedUnionOptions* options_slot = &(tagged_union->options);
+
+				RTTIAnnotatedValue result =
+				    TRTTI_ANNOTATED_VALUE_GET(TaggedUnionOptions, options_slot);
+
+				return new_json_iterate_result_ok(result);
+			} else {
+
+				free_json_path_segment_ref(segment_ref);
+				return new_json_iterate_result_error((JsonIterateError){
+				    .err = TSTR_LIT(
+				        "implementation error, got invalid key at 'TaggedUnion' object_start"),
+				    .path = NULL,
+				});
+			}
+		}
+
+		IF_JSON_ITERATE_VALUE_IS_OBJECT_ENTRY_CONST(value) {
+
+			if(tstr_eq_static_tstr(object_entry.entry.key, TSTR_STATIC_LIT("member"))) {
+
+				if(TRTTI_ANNOTATED_VALUE_IS(TaggedMemberArray, object_entry.entry.value)) {
+
+					// note if we use allocated data and add here here, we could add the data
+					// here, but we use a struct slot algorithm, so nothing to do here, we could
+					// validate the finished entry if we like
+
+					RTTIAnnotatedValue empty = TRTTI_ANNOTATED_VALUE_GET_EMPTY();
+
+					return new_json_iterate_result_ok(empty);
+				}
+
+				RETURN_JSON_ITERATE_ERROR_DYNAMIC("Error: invalid json value for type that "
+				                                  "expected: 'TaggedMemberArray': <no more info>",
+				                                  "Error: invalid json value for type that "
+				                                  "expected: 'TaggedMemberArray': " TRTTI_FMT,
+				                                  TRTTI_FMT_ARGS(object_entry.entry.value));
+
+			} else if(tstr_is_null(object_entry.entry.key)) {
+				return new_json_iterate_result_error((JsonIterateError){
+				    .err = TSTR_LIT("implementation error, the object entry key is <NULL>"),
+				    .path = NULL,
+				});
+			}
+
+			RETURN_JSON_ITERATE_ERROR_DYNAMIC(
+			    "Error: unhandled object key at 'TaggedUnion': <no more info>",
+			    "Error: unhandled object key at 'TaggedUnion': " TSTR_FMT,
+			    TSTR_FMT_ARGS(*object_entry.entry.key));
+		}
+
+		IF_JSON_ITERATE_VALUE_IS_OBJECT_END(value) {
+
+			// NOTE: here we could check some properties of the final result, alias if the type
+			// has all fields set to a valid value
+
+			// NOTE: return NON empty, as this is the result of the subparser, so the return
+			// value of this is the actual result of the json_iterate function!
+
+			return new_json_iterate_result_ok(parent);
 		}
 
 		tstr_static tag_name = get_current_tag_name_for_json_iterate_value(value);
@@ -930,6 +1049,9 @@ static void json_value_iterator_free_tagged_unions(RTTIAnnotatedValue data) {
 	// TODO: CAnonymousStruct
 	// TODO: StructMember
 	// TODO: StructMemberArray
+
+	// TODO: at the end this should exit(1)
+	//  but for debugging it is fine
 
 	color_fprintf(
 	    stderr, COLOR_RED "ERROR: don't know how to free: " COLOR_YELLOW TRTTI_FMT "\n" COLOR_RESET,
