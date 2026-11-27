@@ -1,0 +1,8 @@
+[wrap-git]
+directory = tcolored_cio
+url = https://github.com/Totto16/tcolored_cio.git
+revision = d02d48195c32d8754c9aea39140cce660b8747c3
+depth = 1
+
+[provide]
+dependency_names = tcolored_cio

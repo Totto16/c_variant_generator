@@ -1,0 +1,6 @@
+*
+!*.wrap
+!.gitignore
+!packagefiles/
+!packagefiles/**
+!wrapdb.json

@@ -24,7 +24,6 @@ export class CaseName {
         return new CaseName(parts)
     }
 
-
     public static fromPascalCase(str: string): CaseName {
 
         if (isUTF8String(str)) {

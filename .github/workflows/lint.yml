@@ -1,0 +1,97 @@
+name: Lint CI
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  cpp-linter:
+    name: C++ lints(clang-format + clang-tidy)
+    runs-on: ubuntu-26.04
+    permissions:
+      pull-requests: write
+      issues: write
+    steps:
+      - uses: actions/checkout@v7
+
+      # NOTE: meson has no dependencies, so --break-system-packages doesn't really break anything!
+      - name: Setup Meson
+        run: |
+          pip install meson --break-system-packages
+
+      - name: Setup Clang
+        run: |
+          wget https://apt.llvm.org/llvm.sh
+          chmod +x llvm.sh
+          sudo ./llvm.sh 22
+          sudo apt-get install clang-tidy-22 -y --no-install-recommends
+          echo "CC=clang-22" >> "$GITHUB_ENV"
+          echo "CXX=clang++-22" >> "$GITHUB_ENV"
+
+      - name: Setup Custom clang-tidy
+        run: |
+          echo "TODO"
+        
+        #wget https://apt.totto.lt/built/static/clang-tidy-22-custom-build.tar.gz
+        #wget https://apt.totto.lt/built/static/clang-tidy-22-custom-build.sha256
+
+        #cat ./clang-tidy-22-custom-build.sha256 | sha256sum --check --strict -
+
+        #tar xvzf clang-tidy-22-custom-build.tar.gz
+
+        #sudo mkdir -p /opt/clang-22-custom/
+        #sudo mv ./clang-tidy /opt/clang-22-custom/
+        #sudo chmod +x /opt/clang-22-custom/clang-tidy
+
+        #sudo rm /usr/bin/clang-tidy
+        #sudo rm /usr/bin/clang-tidy-22
+        #sudo ln -sv /opt/clang-22-custom/clang-tidy /usr/bin/clang-tidy-22
+
+      - name: Setup node
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: 10
+
+      - name: Prepare compile_commands.json
+        run: |
+          sudo apt-get update
+          sudo apt-get install ninja-build -y --no-install-recommends
+
+          meson setup build -Dbuildtype=release --fatal-meson-warnings
+
+          meson compile -C build generated_sources
+
+    #TODO: wait for this to work correctly, see https://github.com/llvm/llvm-project/pull/192260
+    #  - name: Verify clang-tidy
+    #    run: |
+    #      clang-tidy-22 --experimental-custom-checks --verify-config
+
+      - uses: cpp-linter/cpp-linter-action@v2
+        id: linter
+        continue-on-error: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          style: file
+          version: 22
+          database: build
+          files-changed-only: ${{ github.event_name != 'workflow_dispatch' }}
+          lines-changed-only: ${{ github.event_name != 'workflow_dispatch' }}
+          thread-comments: update
+          tidy-checks: ""
+          step-summary: true
+          file-annotations: true
+          ignore: subprojects|build|tests/
+          extra-args: "--experimental-custom-checks"
+
+      - name: Fail CI run if linter checks failed
+        if: steps.linter.outputs.checks-failed != 0
+        run: |
+          echo "${{ steps.linter.outputs.checks-failed }} linter checks failed"
+          exit 1
